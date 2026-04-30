@@ -68,7 +68,7 @@ const fmtTime = (iso) => {
 const todayISO = () => new Date(Date.now() - 5 * 3600000).toISOString().split('T')[0];
 
 // ─── CajaView: Cuadre de caja con apertura / cierre real ───
-const CajaView = () => {
+const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [register, setRegister] = useState(null);             // /cash-register/today response
   const [loading, setLoading] = useState(true);
@@ -82,6 +82,22 @@ const CajaView = () => {
   const [subData, setSubData] = useState({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null });
 
   const today = todayISO();
+
+  // Resolve period from parent (Finanzas page) into ISO date range.
+  const range = useMemo(() => {
+    const t = new Date(Date.now() - 5 * 3600000);
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (period === 'custom' && dateFrom && dateTo) return { from: dateFrom, to: dateTo, label: 'Personalizado' };
+    if (period === 'week') {
+      const m = new Date(t); m.setDate(t.getDate() - t.getDay() + 1);
+      return { from: iso(m), to: iso(t), label: 'Esta semana' };
+    }
+    if (period === 'month') {
+      return { from: `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-01`, to: iso(t), label: 'Este mes' };
+    }
+    if (period === 'year') return { from: `${t.getFullYear()}-01-01`, to: iso(t), label: 'Este año' };
+    return { from: iso(t), to: iso(t), label: 'Hoy' };
+  }, [period, dateFrom, dateTo]);
 
   // Entrance animation orchestrated via CSS keyframes + animation-delay (no JS deps).
   // Each section gets a `cuadre2__rise` class; staggered delays come from --i CSS var on children.
@@ -97,7 +113,7 @@ const CajaView = () => {
     // Independent fetches: a failure on /staff/ must not kill the cuadre.
     let regErr = null;
     try {
-      const r = await fetch(`${API_URL}/cash-register/today`, { credentials: 'include' });
+      const r = await fetch(`${API_URL}/cash-register/today?date_from=${range.from}&date_to=${range.to}`, { credentials: 'include' });
       if (r.ok) setRegister(await r.json());
       else regErr = `HTTP ${r.status}`;
     } catch (err) { regErr = err.message; }
@@ -110,9 +126,9 @@ const CajaView = () => {
       }
     } catch { /* staff list is optional — datalist just won't have suggestions */ }
 
-    // Comisiones del día (lo que le debemos a todos hoy)
+    // Comisiones del período (lo que le debemos a todos)
     try {
-      const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${today}&period_to=${today}`, { credentials: 'include' });
+      const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${range.from}&period_to=${range.to}`, { credentials: 'include' });
       if (r.ok) {
         const data = await r.json();
         setPayrollToday(Array.isArray(data) ? data : []);
@@ -121,47 +137,51 @@ const CajaView = () => {
 
     if (regErr) addNotification('Error cargando caja: ' + regErr, 'error');
     setLoading(false);
-  }, [addNotification, today]);
+  }, [addNotification, range.from, range.to]);
 
   const owedToday = useMemo(
     () => payrollToday.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0),
     [payrollToday]
   );
 
-  useEffect(() => { loadCore(); }, [loadCore]);
+  // Invalidate sub-tab cache + reload core when range changes
+  useEffect(() => {
+    setSubData({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null });
+    loadCore();
+  }, [loadCore]);
 
-  // ── Lazy-load each sub-tab on first selection ──
+  // ── Lazy-load each sub-tab on first selection (scoped to current period) ──
   const loadSub = useCallback(async (kind) => {
     if (subData[kind] !== null) return;
     try {
-      const day = today;
+      const f = range.from, t = range.to;
       let payload = null;
       if (kind === 'gastos') {
-        const r = await fetch(`${API_URL}/expenses/?date_from=${day}&date_to=${day}`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/expenses/?date_from=${f}&date_to=${t}`, { credentials: 'include' });
         payload = r.ok ? await r.json() : [];
       } else if (kind === 'ventas') {
-        const r = await fetch(`${API_URL}/invoices/?date_from=${day}&date_to=${day}&limit=500`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/invoices/?date_from=${f}&date_to=${t}&limit=500`, { credentials: 'include' });
         payload = r.ok ? await r.json() : { items: [] };
       } else if (kind === 'comisiones') {
-        const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${day}&period_to=${day}`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${f}&period_to=${t}`, { credentials: 'include' });
         payload = r.ok ? await r.json() : [];
       } else if (kind === 'ingresos') {
-        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${day}&date_to=${day}&type=deposit&limit=500`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${f}&date_to=${t}&type=deposit&limit=500`, { credentials: 'include' });
         payload = r.ok ? (await r.json()).movements : [];
       } else if (kind === 'retiros') {
-        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${day}&date_to=${day}&type=withdrawal&limit=500`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${f}&date_to=${t}&type=withdrawal&limit=500`, { credentials: 'include' });
         payload = r.ok ? (await r.json()).movements : [];
       } else if (kind === 'multas') {
-        const r = await fetch(`${API_URL}/finances/fines?date_from=${day}&date_to=${day}`, { credentials: 'include' });
+        const r = await fetch(`${API_URL}/finances/fines?date_from=${f}&date_to=${t}`, { credentials: 'include' });
         payload = r.ok ? await r.json() : [];
       }
       setSubData(prev => ({ ...prev, [kind]: payload }));
     } catch (err) {
       addNotification(`Error cargando ${kind}: ${err.message}`, 'error');
     }
-  }, [subData, today, addNotification]);
+  }, [subData, range.from, range.to, addNotification]);
 
-  useEffect(() => { if (register?.status === 'open') loadSub(subTab); }, [subTab, register?.status, loadSub]);
+  useEffect(() => { if (register) loadSub(subTab); }, [subTab, register, loadSub]);
 
   const refresh = () => { setSubData({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null }); loadCore(); };
 
@@ -288,9 +308,10 @@ const CajaView = () => {
                 Caja activa
               </span>
               <span className="cuadre2__date">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+              <span className="cuadre2__period-tag">Periodo: {range.label}</span>
             </div>
 
-            <div className="cuadre2__hero-label">Total en caja</div>
+            <div className="cuadre2__hero-label">Efectivo en caja (acumulado)</div>
             <Counter value={cashReal} className="cuadre2__hero-amount" />
 
             <div className="cuadre2__hero-meta">
@@ -413,23 +434,23 @@ const CajaView = () => {
 
         <div className="cuadre2__panel cuadre2__panel--ledger">
           <div className="cuadre2__panel-head">
-            <span>Cuadre del dia</span>
-            <span className="cuadre2__panel-tag">Real time</span>
+            <span>Efectivo en caja (acumulado)</span>
+            <span className="cuadre2__panel-tag">All time</span>
           </div>
           <div className="cuadre2__ledger">
-            <div className="cuadre2__ledger-row"><span>+ Base de apertura</span><strong>{formatCOP(register.opening_amount || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>+ Ventas en efectivo</span><strong>{formatCOP(register.total_cash || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>+ Otros ingresos</span><strong style={{ color: '#10B981' }}>{formatCOP(register.deposits_total || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Gastos</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.expenses_total || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Retiros</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.withdrawals_total || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Pago colaboradores</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.payroll_total || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>+ Base de apertura (hoy)</span><strong>{formatCOP(register.opening_amount || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>+ Ventas en efectivo</span><strong>{formatCOP(register.all_cash_sales || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>+ Otros ingresos</span><strong style={{ color: '#10B981' }}>{formatCOP(register.all_deposits || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Gastos en efectivo</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_cash_expenses || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Pagos a colaboradores</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_cash_payroll || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Retiros</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_withdrawals || 0)}</strong></div>
             <div className="cuadre2__ledger-total">
-              <span>= Efectivo en caja</span>
+              <span>= Efectivo fisico</span>
               <Counter value={cashReal} className={cashReal < 0 ? 'cuadre2__neg' : ''} />
             </div>
-            {register.total_tips > 0 && (
-              <div className="cuadre2__ledger-foot">Propinas registradas aparte: <strong>{formatCOP(register.total_tips)}</strong></div>
-            )}
+            <div className="cuadre2__ledger-foot">
+              Periodo <strong>{range.label}</strong>: {formatCOP(register.deposits_total || 0)} ingresos · {formatCOP((register.expenses_total || 0) + (register.withdrawals_total || 0) + (register.payroll_total || 0))} salidas
+            </div>
           </div>
         </div>
       </div>
@@ -1182,7 +1203,7 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
 
       {/* Content */}
       <div className="gastos__content">
-        {subView === 'caja' && <CajaView />}
+        {subView === 'caja' && <CajaView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
         {subView === 'gastos' && <GastosView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
         {subView === 'pnl' && <PnLView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       </div>

@@ -886,17 +886,29 @@ def open_register(
 
 @router.get("/cash-register/today")
 def get_today_register(
+    date_from: Optional[str] = Query(None, description="ISO yyyy-mm-dd; default: today (Colombia)"),
+    date_to: Optional[str] = Query(None, description="ISO yyyy-mm-dd; default: today (Colombia)"),
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    """Cuadre dashboard. Two distinct numbers:
+
+    - **cash_real**: ALL-TIME running cash balance. Cumulative sum of every
+      cash inflow (paid invoices in cash + manual deposits) minus every cash
+      outflow (cash expenses + cash payroll + manual withdrawals). Plus the
+      current day's opening_amount (base) for setups that count starting cash.
+      This is "lo que hay físicamente en la caja" — does NOT reset daily.
+
+    - **Period metrics** (services, products, methods, expenses, payroll,
+      etc.): scoped to the date_from/date_to range. Defaults to today.
+    """
     tid = safe_tid(current_user, db)
     today = now_colombia().date()
 
+    # Auto-open today's register if missing (we still keep the row for the
+    # opening_amount / responsible fields; status/cierre are deprecated UX).
     register = db.query(CashRegister).filter(CashRegister.date == today)
     register = _tenant_filter(register, CashRegister, tid).first()
-    # Auto-open: the cuadre is always available. If no register exists for today,
-    # create one with opening_amount=0 owned by the current user. Owners can
-    # adjust the base amount and responsible later via the cuadre actions.
     if not register:
         register = CashRegister(
             tenant_id=tid,
@@ -910,20 +922,183 @@ def get_today_register(
         db.commit()
         db.refresh(register)
     elif register.status == "closed":
-        # Reopen automatically — the cuadre stays available even after a
-        # manual close (close is now a snapshot for the books, not a lock).
         register.status = "open"
         register.closed_by = None
         register.closed_at = None
         register.counted_cash = None
         register.discrepancy = None
+        db.commit()
 
-    # Recalculate live totals from checkouts. Skip db.refresh() afterwards —
-    # the in-memory object is already up to date and refreshing would discard
-    # the Python-stashed splits (_services_count, etc.) set by the helper.
-    _recalculate_register_totals(db, register, tid)
-    db.commit()
-    return _register_to_dict(register, db)
+    # ── Resolve period (defaults to today)
+    try:
+        d_from = date.fromisoformat(date_from) if date_from else today
+        d_to = date.fromisoformat(date_to) if date_to else today
+    except ValueError:
+        raise HTTPException(400, "date_from / date_to deben ser yyyy-mm-dd")
+
+    base = int(register.opening_amount or 0)
+
+    # ═════════════════ PERIOD METRICS ═════════════════
+    # Invoices in range (paid or sent, not deleted)
+    iq = db.query(Invoice).filter(
+        Invoice.issued_date >= d_from,
+        Invoice.issued_date <= d_to,
+        Invoice.status.in_(["paid", "sent"]),
+        Invoice.deleted_at.is_(None),
+    )
+    iq = _tenant_filter(iq, Invoice, tid)
+    invoices = iq.all()
+    invoice_ids = [inv.id for inv in invoices]
+
+    total_sales = sum(int(inv.total or 0) for inv in invoices)
+    total_discounts = sum(int(inv.discount_amount or 0) for inv in invoices)
+    transaction_count = len(invoices)
+
+    # Methods of payment in range
+    methods = {"efectivo": 0, "nequi": 0, "daviplata": 0, "transferencia": 0, "tarjeta": 0}
+    for inv in invoices:
+        m = (inv.payment_method or "efectivo").lower()
+        amt = int(inv.total or 0)
+        if m in ("tarjeta_debito", "tarjeta_credito", "tarjeta"):
+            methods["tarjeta"] += amt
+        elif m in methods:
+            methods[m] += amt
+        else:
+            methods["efectivo"] += amt
+
+    # Service vs product split + tips
+    services_count = products_count = services_billed = products_billed = total_tips = 0
+    if invoice_ids:
+        items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id.in_(invoice_ids)).all()
+        for it in items:
+            qty = int(it.quantity or 1)
+            line_total = int(it.total or 0)
+            is_product = bool((it.service_name or "").startswith("[Producto]"))
+            if is_product:
+                products_count += qty
+                products_billed += line_total
+            else:
+                services_count += qty
+                services_billed += line_total
+        visit_ids = list({it.visit_id for it in items if it.visit_id})
+        if visit_ids:
+            for v in db.query(VisitHistory).filter(VisitHistory.id.in_(visit_ids)).all():
+                total_tips += int(getattr(v, "tip", 0) or 0)
+
+    # Expenses in range
+    eq = db.query(Expense).filter(
+        Expense.date >= d_from,
+        Expense.date <= d_to,
+        Expense.deleted_at.is_(None),
+    )
+    eq = _tenant_filter(eq, Expense, tid)
+    period_expenses = eq.all()
+    expenses_total = sum(int(e.amount or 0) for e in period_expenses)
+    expenses_cash_period = sum(int(e.amount or 0) for e in period_expenses if (e.payment_method or "efectivo").lower() == "efectivo")
+
+    # StaffPayments in range
+    pq = db.query(StaffPayment).filter(
+        func.date(StaffPayment.paid_at) >= d_from,
+        func.date(StaffPayment.paid_at) <= d_to,
+        StaffPayment.status == "paid",
+    )
+    pq = _tenant_filter(pq, StaffPayment, tid)
+    period_payments = pq.all()
+    payroll_total = sum(int(p.amount or 0) for p in period_payments)
+    payroll_cash_period = sum(int(p.amount or 0) for p in period_payments if (p.payment_method or "efectivo").lower() == "efectivo")
+
+    # CashMovements in range (deposits/withdrawals)
+    mq = db.query(CashMovement).filter(
+        func.date(CashMovement.created_at) >= d_from,
+        func.date(CashMovement.created_at) <= d_to,
+    )
+    mq = _tenant_filter(mq, CashMovement, tid)
+    deposits_total = withdrawals_total = 0
+    for m in mq.all():
+        a = int(m.amount or 0)
+        if m.movement_type == "deposit":
+            deposits_total += a
+        elif m.movement_type == "withdrawal":
+            withdrawals_total += abs(a)
+
+    # ═════════════════ ALL-TIME CASH BALANCE ═════════════════
+    # cash_real = base + (all paid invoices in cash) + (all deposits)
+    #           − (all cash expenses) − (all cash payroll) − (all withdrawals)
+    def _scope_to_tenant(q, model):
+        if tid:
+            return q.filter(model.tenant_id == tid)
+        return q
+
+    all_cash_sales = int(_scope_to_tenant(
+        db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
+            Invoice.payment_method == "efectivo",
+            Invoice.status.in_(["paid", "sent"]),
+            Invoice.deleted_at.is_(None),
+        ), Invoice).scalar() or 0)
+
+    all_deposits = int(_scope_to_tenant(
+        db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
+            CashMovement.movement_type == "deposit",
+        ), CashMovement).scalar() or 0)
+
+    all_withdrawals = abs(int(_scope_to_tenant(
+        db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
+            CashMovement.movement_type == "withdrawal",
+        ), CashMovement).scalar() or 0))
+
+    all_cash_expenses = int(_scope_to_tenant(
+        db.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
+            Expense.deleted_at.is_(None),
+            ((Expense.payment_method == "efectivo") | (Expense.payment_method.is_(None))),
+        ), Expense).scalar() or 0)
+
+    all_cash_payroll = int(_scope_to_tenant(
+        db.query(func.coalesce(func.sum(StaffPayment.amount), 0)).filter(
+            StaffPayment.status == "paid",
+            StaffPayment.payment_method == "efectivo",
+        ), StaffPayment).scalar() or 0)
+
+    cash_real = base + all_cash_sales + all_deposits - all_cash_expenses - all_cash_payroll - all_withdrawals
+
+    return {
+        "id": register.id,
+        "tenant_id": register.tenant_id,
+        "date": today.isoformat(),
+        "status": "open",
+        "opening_amount": base,
+        "opened_by": register.opened_by,
+        "opened_at": register.opened_at.isoformat() if register.opened_at else None,
+        # Period range
+        "date_from": d_from.isoformat(),
+        "date_to": d_to.isoformat(),
+        # Period metrics
+        "total_sales": total_sales,
+        "total_cash": methods["efectivo"],
+        "total_nequi": methods["nequi"],
+        "total_daviplata": methods["daviplata"],
+        "total_transfer": methods["transferencia"],
+        "total_card": methods["tarjeta"],
+        "total_tips": total_tips,
+        "total_discounts": total_discounts,
+        "transaction_count": transaction_count,
+        "services_count": services_count,
+        "products_count": products_count,
+        "services_billed": services_billed,
+        "products_billed": products_billed,
+        "deposits_total": deposits_total,
+        "withdrawals_total": withdrawals_total,
+        "expenses_total": expenses_total,
+        "expenses_cash": expenses_cash_period,
+        "payroll_total": payroll_total,
+        "payroll_cash": payroll_cash_period,
+        # All-time cash balance (cumulative — does NOT reset daily)
+        "cash_real": cash_real,
+        "all_cash_sales": all_cash_sales,
+        "all_cash_expenses": all_cash_expenses,
+        "all_cash_payroll": all_cash_payroll,
+        "all_deposits": all_deposits,
+        "all_withdrawals": all_withdrawals,
+    }
 
 
 # ============================================================================
