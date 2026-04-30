@@ -8371,3 +8371,248 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+// ============================================================================
+// CUADRE DE CAJA — Weibook-style daily session UI (used by TabGastos > CajaView)
+// ============================================================================
+.cuadre {
+  &__empty {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+
+    h3 { margin: 0; font-size: 18px; color: #1E293B; }
+    p  { margin: 0; color: #64748B; max-width: 460px; font-size: 14px; }
+  }
+  &__empty-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: rgba(59, 130, 246, 0.08);
+    color: #3B82F6;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  // ── Header de sesion ──
+  &__head {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  &__head-left { display: flex; align-items: center; gap: 16px; }
+  &__head-meta {
+    display: flex; flex-direction: column; gap: 2px;
+    font-size: 12px; color: #64748B;
+    strong { color: #1E293B; }
+  }
+  &__head-right { text-align: right; }
+  &__head-cash {
+    display: flex; flex-direction: column; gap: 2px;
+    small { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: rgba(0,0,0,0.5); }
+    strong { font-size: 22px; color: #1E293B; font-weight: 800; }
+  }
+
+  &__status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    &--open    { background: rgba(16, 185, 129, 0.12); color: #047857; }
+    &--closed  { background: rgba(100, 116, 139, 0.14); color: #475569; }
+  }
+  &__status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+  }
+
+  // ── 6 acciones ──
+  &__actions {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+    @media (max-width: 1280px) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 720px)  { grid-template-columns: repeat(2, 1fr); }
+  }
+  &__action {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    color: #1E293B;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    svg { color: #64748B; }
+    &--close  { background: #DC2626; color: #fff; svg { color: #fff; } &:hover:not(:disabled){ background: #B91C1C; } }
+    &--reopen { background: #059669; color: #fff; svg { color: #fff; } &:hover:not(:disabled){ background: #047857; } }
+  }
+
+  // ── Resumen ──
+  &__resumen {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  &__card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  &__card-title { font-size: 15px; font-weight: 700; color: #1E293B; }
+  &__card-badge {
+    font-size: 11px; padding: 4px 10px;
+    background: rgba(59, 130, 246, 0.08);
+    color: #3B82F6;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  &__divider { height: 1px; background: rgba(0,0,0,0.06); margin: 14px 0; }
+  &__section {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(0, 0, 0, 0.4);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  &__row {
+    display: flex; justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #334155;
+    span:last-child { font-weight: 600; color: #1E293B; }
+    &--strong {
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 10px;
+      margin-top: 4px;
+      font-weight: 700;
+      span { font-weight: 700; }
+    }
+  }
+  &__total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #059669 0%, #047857 100%);
+    border-radius: 12px;
+    color: #fff;
+    span:first-child { font-size: 13px; font-weight: 600; opacity: 0.9; }
+    span:last-child { font-size: 22px; font-weight: 800; }
+    &--neg { color: #FEE2E2; }
+  }
+  &__close-summary {
+    margin-top: 16px;
+    padding: 14px;
+    background: #F8FAFC;
+    border-radius: 10px;
+    border: 1px dashed rgba(0,0,0,0.08);
+  }
+
+  // ── Sub-tabs internos ──
+  &__subs {
+    display: flex; gap: 4px;
+    background: #F1F5F9;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+  }
+  &__sub {
+    flex: 1;
+    min-width: 110px;
+    background: transparent;
+    border: 0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+    &:hover { color: #1E293B; }
+    &--active { background: #fff; color: #1E40AF; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  }
+
+  &__sub-panel {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 16px;
+    min-height: 200px;
+  }
+
+  // ── Tablas dentro de sub-tabs ──
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(0,0,0,0.45);
+      font-weight: 700;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      color: #1E293B;
+    }
+    tr:hover td { background: #F8FAFC; }
+  }
+  &__th-right { text-align: right !important; }
+  &__td-amount { text-align: right; font-weight: 700; }
+
+  // ── Comisiones cards (estilo Weibook) ──
+  &__commissions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  &__comm-card {
+    background: #F8FAFC;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  &__comm-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    strong { color: #1E293B; font-size: 14px; }
+    span { font-size: 12px; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; }
+  }
+}

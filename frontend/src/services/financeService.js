@@ -66,9 +66,16 @@ const financeService = {
   getForecast: async () => handleResponse(await authFetch(`${API}/finances/forecast`, { headers })),
   getStaffPerformance: async (params = {}) => handleResponse(await authFetch(`${API}/finances/staff-performance${qs(params)}`, { headers })),
 
-  // ── Cash Register ──
-  getCashRegister: async () => handleResponse(await authFetch(`${API}/finances/cash-register`, { headers })),
+  // ── Cash Register (legacy global balance + movements) ──
+  getCashRegister: async (params = {}) => handleResponse(await authFetch(`${API}/finances/cash-register${qs(params)}`, { headers })),
   cashMovement: async (data) => handleResponse(await authFetch(`${API}/finances/cash-register/movement`, { method: 'POST', headers, body: JSON.stringify(data) })),
+
+  // ── Cash Register Session (apertura/cierre per day) ──
+  getRegisterToday: async () => handleResponse(await authFetch(`${API}/cash-register/today`, { headers })),
+  openRegister: async (data) => handleResponse(await authFetch(`${API}/cash-register/open`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  closeRegister: async (data) => handleResponse(await authFetch(`${API}/cash-register/close`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  changeRegisterResponsible: async (data) => handleResponse(await authFetch(`${API}/cash-register/responsible`, { method: 'PUT', headers, body: JSON.stringify(data) })),
+  getRegisterHistory: async (params = {}) => handleResponse(await authFetch(`${API}/cash-register/history${qs(params)}`, { headers })),
 
   // ── Fines ──
   createFine: async (data) => handleResponse(await authFetch(`${API}/finances/fines`, { method: 'POST', headers, body: JSON.stringify(data) })),

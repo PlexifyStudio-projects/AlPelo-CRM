@@ -4,7 +4,7 @@ import { useNotification } from '../../../context/NotificationContext';
 import financeService from '../../../services/financeService';
 import {
   Icons, CATEGORY_COLORS, EXPENSE_CATEGORIES, RECURRING_OPTIONS, PAYMENT_METHODS, GASTOS_PERIODS, API_URL,
-  formatCOP, AnimatedNumber, SkeletonBlock,
+  formatCOP, SkeletonBlock,
 } from '../financeConstants';
 
 // ─── Sub-tab definitions ───
@@ -14,382 +14,568 @@ const SUB_TABS = [
   { id: 'pnl', label: 'Estado de resultados', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
 ];
 
-const MOVEMENT_COLORS = { sale: '#059669', deposit: '#3B82F6', withdrawal: '#DC2626', expense: '#F59E0B', adjustment: '#8B5CF6', nomina: '#F59E0B' };
-const MOVEMENT_LABELS = { sale: 'Venta', deposit: 'Deposito', withdrawal: 'Retiro', expense: 'Gasto', adjustment: 'Ajuste', nomina: 'Nomina' };
-const MOVEMENT_ICONS = {
-  sale: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
-  deposit: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
-  withdrawal: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
-  expense: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-  adjustment: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
-};
-
-const CAJA_PERIODS = [
-  { value: 'today', label: 'Hoy' },
-  { value: 'yesterday', label: 'Ayer' },
-  { value: 'week', label: 'Esta Semana' },
-  { value: 'last_week', label: 'Semana Pasada' },
-  { value: 'month', label: 'Este Mes' },
-  { value: 'custom', label: 'Personalizado' },
+// ─── Sub-tabs internos del cuadre (estilo Weibook) ───
+const CUADRE_SUBS = [
+  { id: 'gastos', label: 'Gastos' },
+  { id: 'ventas', label: 'Ventas' },
+  { id: 'comisiones', label: 'Comisiones del dia' },
+  { id: 'ingresos', label: 'Ingresos a caja' },
+  { id: 'retiros', label: 'Retiros' },
+  { id: 'multas', label: 'Multas' },
 ];
 
-// ─── CajaView: Cuadre de caja del dia ───
+// ─── Helpers ───
+const fmtDt = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+};
+const fmtTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
+  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+};
+const todayISO = () => new Date(Date.now() - 5 * 3600000).toISOString().split('T')[0];
+
+// ─── CajaView: Cuadre de caja con apertura / cierre real ───
 const CajaView = () => {
   const { addNotification } = useNotification();
-  const [data, setData] = useState(null);
+  const [register, setRegister] = useState(null);             // /cash-register/today response
   const [loading, setLoading] = useState(true);
-  const [actionModal, setActionModal] = useState(null);
-  const [formAmount, setFormAmount] = useState('');
-  const [formDesc, setFormDesc] = useState('');
+  const [actionModal, setActionModal] = useState(null);        // 'open' | 'close' | 'deposit' | 'withdrawal' | 'responsible' | 'expense' | null
+  const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [cajaPeriod, setCajaPeriod] = useState('today');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
+  const [subTab, setSubTab] = useState('ventas');
+  const [staff, setStaff] = useState([]);
 
-  const [payMethods, setPayMethods] = useState(null);
-  const [cajaSum, setCajaSum] = useState(null);
+  // Sub-tab payloads (lazy-loaded)
+  const [subData, setSubData] = useState({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null });
 
-  const periodParams = useMemo(() => {
-    const today = new Date(Date.now() - 5 * 3600000);
-    const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const todayStr = toStr(today);
-    if (cajaPeriod === 'custom' && customFrom && customTo) return { period: 'custom', date_from: customFrom, date_to: customTo };
-    if (cajaPeriod === 'yesterday') {
-      const y = new Date(today); y.setDate(today.getDate() - 1);
-      return { period: 'custom', date_from: toStr(y), date_to: toStr(y) };
-    }
-    if (cajaPeriod === 'last_week') {
-      const end = new Date(today); end.setDate(today.getDate() - today.getDay());
-      const start = new Date(end); start.setDate(end.getDate() - 6);
-      return { period: 'custom', date_from: toStr(start), date_to: toStr(end) };
-    }
-    return { period: cajaPeriod };
-  }, [cajaPeriod, customFrom, customTo]);
+  const today = todayISO();
 
-  const periodLabel = useMemo(() => {
-    if (cajaPeriod === 'today') return 'Hoy';
-    if (cajaPeriod === 'yesterday') return 'Ayer';
-    if (periodParams.date_from && periodParams.date_to) {
-      const f = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-      return `${f(periodParams.date_from)} — ${f(periodParams.date_to)}`;
-    }
-    return CAJA_PERIODS.find(p => p.value === cajaPeriod)?.label || '';
-  }, [cajaPeriod, periodParams]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
+  const loadCore = useCallback(async () => {
     try {
-      const qs = new URLSearchParams(periodParams).toString();
-      const [cajaRes, pmRes, sumRes] = await Promise.all([
-        fetch(`${API_URL}/finances/cash-register`, { credentials: 'include' }),
-        fetch(`${API_URL}/finances/payment-methods?${qs}`, { credentials: 'include' }),
-        fetch(`${API_URL}/finances/summary?${qs}`, { credentials: 'include' }),
+      const [regRes, stRes] = await Promise.all([
+        fetch(`${API_URL}/cash-register/today`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+        fetch(`${API_URL}/staff`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
       ]);
-      if (cajaRes.ok) setData(await cajaRes.json());
-      if (pmRes.ok) setPayMethods(await pmRes.json());
-      if (sumRes.ok) setCajaSum(await sumRes.json());
+      setRegister(regRes);
+      setStaff(Array.isArray(stRes) ? stRes : (stRes?.items || []));
     } catch (err) {
-      if (err.message !== 'Failed to fetch') addNotification(err.message, 'error');
+      addNotification('Error cargando caja: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [addNotification, periodParams]);
+  }, [addNotification, today]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadCore(); }, [loadCore]);
 
-  const handleMovement = async () => {
-    if (!formAmount || !formDesc.trim()) return;
+  // ── Lazy-load each sub-tab on first selection ──
+  const loadSub = useCallback(async (kind) => {
+    if (subData[kind] !== null) return;
+    try {
+      const day = today;
+      let payload = null;
+      if (kind === 'gastos') {
+        const r = await fetch(`${API_URL}/expenses/?date_from=${day}&date_to=${day}`, { credentials: 'include' });
+        payload = r.ok ? await r.json() : [];
+      } else if (kind === 'ventas') {
+        const r = await fetch(`${API_URL}/invoices/?date_from=${day}&date_to=${day}&limit=500`, { credentials: 'include' });
+        payload = r.ok ? await r.json() : { items: [] };
+      } else if (kind === 'comisiones') {
+        const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${day}&period_to=${day}`, { credentials: 'include' });
+        payload = r.ok ? await r.json() : [];
+      } else if (kind === 'ingresos') {
+        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${day}&date_to=${day}&type=deposit&limit=500`, { credentials: 'include' });
+        payload = r.ok ? (await r.json()).movements : [];
+      } else if (kind === 'retiros') {
+        const r = await fetch(`${API_URL}/finances/cash-register?date_from=${day}&date_to=${day}&type=withdrawal&limit=500`, { credentials: 'include' });
+        payload = r.ok ? (await r.json()).movements : [];
+      } else if (kind === 'multas') {
+        const r = await fetch(`${API_URL}/finances/fines?date_from=${day}&date_to=${day}`, { credentials: 'include' });
+        payload = r.ok ? await r.json() : [];
+      }
+      setSubData(prev => ({ ...prev, [kind]: payload }));
+    } catch (err) {
+      addNotification(`Error cargando ${kind}: ${err.message}`, 'error');
+    }
+  }, [subData, today, addNotification]);
+
+  useEffect(() => { if (register?.status === 'open') loadSub(subTab); }, [subTab, register?.status, loadSub]);
+
+  const refresh = () => { setSubData({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null }); loadCore(); };
+
+  // ── Action handlers ──
+  const openModal = (type, initial = {}) => { setActionModal(type); setForm(initial); };
+  const closeModal = () => { if (!saving) { setActionModal(null); setForm({}); } };
+
+  const submitOpen = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/open`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ opening_amount: parseInt(form.opening_amount || 0, 10) }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification('Caja abierta', 'success');
+      closeModal();
+      refresh();
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
+    setSaving(false);
+  };
+
+  const submitClose = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/close`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ counted_cash: parseInt(form.counted_cash || 0, 10), notes: form.notes || null }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification('Caja cerrada', 'success');
+      closeModal();
+      refresh();
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
+    setSaving(false);
+  };
+
+  const submitMovement = async () => {
     setSaving(true);
     try {
       const res = await fetch(`${API_URL}/finances/cash-register/movement`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ type: actionModal, amount: parseInt(formAmount), description: formDesc.trim() }),
+        body: JSON.stringify({ type: actionModal, amount: parseInt(form.amount || 0, 10), description: (form.description || '').trim() }),
       });
-      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
-      addNotification(actionModal === 'deposit' ? 'Dinero agregado a la caja' : 'Retiro registrado', 'success');
-      setActionModal(null);
-      setFormAmount('');
-      setFormDesc('');
-      load();
-    } catch (err) {
-      addNotification('Error: ' + err.message, 'error');
-    }
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification(actionModal === 'deposit' ? 'Ingreso registrado' : 'Retiro registrado', 'success');
+      closeModal();
+      refresh();
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
+    setSaving(false);
+  };
+
+  const submitResponsible = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/responsible`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ opened_by: form.opened_by }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification('Responsable actualizado', 'success');
+      closeModal();
+      refresh();
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
+    setSaving(false);
+  };
+
+  const submitExpense = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/expenses/`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({
+          category: form.category || 'otros',
+          description: (form.description || '').trim(),
+          amount: parseInt(form.amount || 0, 10),
+          date: today,
+          payment_method: form.payment_method || 'efectivo',
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification('Gasto registrado', 'success');
+      closeModal();
+      refresh();
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
     setSaving(false);
   };
 
   if (loading) return (
     <div className="gastos__skeleton">
       <SkeletonBlock width="100%" height="120px" />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
-        <SkeletonBlock width="100%" height="200px" />
-        <SkeletonBlock width="100%" height="200px" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginTop: 16 }}>
+        {Array.from({ length: 6 }).map((_, i) => <SkeletonBlock key={i} width="100%" height="90px" />)}
       </div>
+      <SkeletonBlock width="100%" height="320px" />
     </div>
   );
 
-  const balance = data?.balance || 0;
-  const movements = data?.movements || [];
-  const salesTotal = data?.sales_today || 0;
-  const depositsTotal = data?.deposits_today || 0;
-  const withdrawalsTotal = data?.withdrawals_today || 0;
+  // ── Sin abrir → empty state con CTA ──
+  if (!register || register.status === 'not_opened') {
+    return (
+      <>
+        <div className="cuadre__empty">
+          <div className="cuadre__empty-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+          </div>
+          <h3>La caja del dia no esta abierta</h3>
+          <p>Abre la caja con el monto inicial en efectivo para empezar a registrar movimientos del dia.</p>
+          <button className="gastos__btn gastos__btn--primary" onClick={() => openModal('open', { opening_amount: '' })}>
+            Abrir caja
+          </button>
+        </div>
+        {actionModal === 'open' && <OpenModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitOpen} />}
+      </>
+    );
+  }
 
-  // Payment methods breakdown (from /finances/payment-methods?period=today)
-  const pmItems = payMethods?.items || [];
-  const getMethodTotal = (method) => pmItems.find(p => p.method === method)?.total || 0;
-  const totalCash = getMethodTotal('efectivo');
-  const totalCard = getMethodTotal('tarjeta') + getMethodTotal('tarjeta_debito') + getMethodTotal('tarjeta_credito');
-  const totalNequi = getMethodTotal('nequi');
-  const totalDaviplata = getMethodTotal('daviplata');
-  const totalTransfer = getMethodTotal('transferencia') + getMethodTotal('bancolombia');
-  const totalSales = pmItems.reduce((s, p) => s + (p.total || 0), 0);
-  const txCount = cajaSum?.total_visits || pmItems.reduce((s, p) => s + (p.count || 0), 0);
-
-  // Summary data
-  const totalRevenue = cajaSum?.total_revenue || totalSales;
-
-  const fmtDt = (iso) => {
-    if (!iso) return '';
-    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
-    return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
-  };
-  const fmtDateOnly = (iso) => {
-    if (!iso) return '';
-    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
-    return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' });
-  };
-  const fmtTimeOnly = (iso) => {
-    if (!iso) return '';
-    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
-    return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
-  };
-
-  // Calculate gastos + retiros + nomina from movements
-  const todayMovements = movements.filter(m => {
-    if (!m.created_at) return false;
-    const d = new Date(m.created_at + (m.created_at.includes('Z') ? '' : 'Z'));
-    return d.toDateString() === new Date().toDateString();
-  });
-  const gastosHoy = todayMovements.filter(m => m.type === 'expense').reduce((s, m) => s + Math.abs(m.amount), 0);
-  const retirosHoy = todayMovements.filter(m => m.type === 'withdrawal').reduce((s, m) => s + Math.abs(m.amount), 0);
-  const nominaHoy = todayMovements.filter(m => m.type === 'nomina').reduce((s, m) => s + Math.abs(m.amount), 0);
-  const otrosIngresos = depositsTotal;
+  // ── Caja abierta o cerrada ──
+  const isClosed = register.status === 'closed';
+  const cashReal = register.cash_real ?? 0;
+  const totalSales = register.total_sales || 0;
 
   return (
     <>
-      {/* ─── Period selector ─── */}
-      <div className="gastos__controls">
-        <div className="gastos__periods">
-          {CAJA_PERIODS.map(p => (
-            <button key={p.value} className={`gastos__period ${cajaPeriod === p.value ? 'gastos__period--active' : ''}`} onClick={() => setCajaPeriod(p.value)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-        {cajaPeriod === 'custom' && (
-          <div className="gastos__custom-dates">
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
-            <span>—</span>
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+      {/* HEADER de sesion */}
+      <div className="cuadre__head">
+        <div className="cuadre__head-left">
+          <span className={`cuadre__status cuadre__status--${register.status}`}>
+            <span className="cuadre__status-dot" />
+            {isClosed ? 'Cerrada' : 'Abierta'}
+          </span>
+          <div className="cuadre__head-meta">
+            <span><strong>{register.opened_by || '—'}</strong> · responsable</span>
+            <span>Apertura {fmtTime(register.opened_at)}</span>
+            {isClosed && <span>Cierre {fmtTime(register.closed_at)}</span>}
           </div>
+        </div>
+        <div className="cuadre__head-right">
+          <span className="cuadre__head-cash">
+            <small>Total en caja</small>
+            <strong>{formatCOP(cashReal)}</strong>
+          </span>
+        </div>
+      </div>
+
+      {/* 6 ACCIONES */}
+      <div className="cuadre__actions">
+        {!isClosed && (
+          <button className="cuadre__action cuadre__action--close" onClick={() => openModal('close', { counted_cash: cashReal, notes: '' })}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/><line x1="9" y1="9" x2="15" y2="9"/></svg>
+            <span>Cerrar cuadre</span>
+          </button>
         )}
-        <span className="gastos__date-label">{Icons.calendar} {periodLabel}</span>
+        {isClosed && (
+          <button className="cuadre__action cuadre__action--reopen" onClick={() => openModal('open', { opening_amount: register.opening_amount })}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <span>Reabrir caja</span>
+          </button>
+        )}
+        <button className="cuadre__action" onClick={() => openModal('expense', { amount: '', description: '', category: 'otros', payment_method: 'efectivo' })} disabled={isClosed}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Registrar gasto</span>
+        </button>
+        <button className="cuadre__action" onClick={() => openModal('deposit', { amount: '', description: '' })} disabled={isClosed}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Registrar ingreso</span>
+        </button>
+        <button className="cuadre__action" onClick={() => openModal('responsible', { opened_by: register.opened_by || '' })} disabled={isClosed}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Cambiar responsable</span>
+        </button>
+        <button className="cuadre__action" onClick={() => openModal('withdrawal', { amount: '', description: '' })} disabled={isClosed}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+          <span>Retiro de dinero</span>
+        </button>
+        <button className="cuadre__action" onClick={() => refresh()}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <span>Recargar</span>
+        </button>
       </div>
 
-      {/* ─── Hero: Saldo + Acciones ─── */}
-      <div className="gastos__bento">
-        <div className="gastos__hero-card">
-          <div className="gastos__hero-label">Cuadre de caja del dia</div>
-          <div className={`gastos__hero-value ${balance < 0 ? 'gastos__hero-value--negative' : ''}`}>
-            <AnimatedNumber value={balance} prefix="$" />
-          </div>
-          <div className="gastos__hero-sub">Corte cuadre de caja actual</div>
+      {/* RESUMEN CONTABLE */}
+      <div className="cuadre__resumen">
+        <div className="cuadre__card-header">
+          <span className="cuadre__card-title">Resumen del dia</span>
+          <span className="cuadre__card-badge">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
         </div>
 
-        <div className="gastos__kpi-card gastos__kpi-card--income" style={{ cursor: 'pointer' }} onClick={() => { setActionModal('deposit'); setFormAmount(''); setFormDesc(''); }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <div className="gastos__kpi-data">
-            <span className="gastos__action-label" style={{ color: '#059669' }}>Registrar ingreso</span>
-            <span className="gastos__action-hint">Depositar efectivo</span>
-          </div>
+        <div className="cuadre__row"><span>Dinero base (apertura)</span><span>{formatCOP(register.opening_amount || 0)}</span></div>
+
+        <div className="cuadre__divider" />
+        <div className="cuadre__section">Ventas por metodo de pago</div>
+        <div className="cuadre__row"><span>Efectivo</span><span>{formatCOP(register.total_cash || 0)}</span></div>
+        <div className="cuadre__row"><span>Tarjeta (datafono)</span><span>{formatCOP(register.total_card || 0)}</span></div>
+        <div className="cuadre__row"><span>Nequi</span><span>{formatCOP(register.total_nequi || 0)}</span></div>
+        <div className="cuadre__row"><span>Daviplata</span><span>{formatCOP(register.total_daviplata || 0)}</span></div>
+        <div className="cuadre__row"><span>Transferencia</span><span>{formatCOP(register.total_transfer || 0)}</span></div>
+        <div className="cuadre__row cuadre__row--strong"><span>Total en ventas</span><span>{formatCOP(totalSales)}</span></div>
+
+        <div className="cuadre__divider" />
+        <div className="cuadre__section">Detalle de ventas</div>
+        <div className="cuadre__row"><span>Facturado en servicios</span><span>{formatCOP(register.services_billed || 0)}</span></div>
+        <div className="cuadre__row"><span>Facturado en productos</span><span>{formatCOP(register.products_billed || 0)}</span></div>
+        <div className="cuadre__row"><span>Cantidad de servicios</span><span>{register.services_count || 0}</span></div>
+        <div className="cuadre__row"><span>Cantidad de productos</span><span>{register.products_count || 0}</span></div>
+        <div className="cuadre__row"><span>Propinas</span><span>{formatCOP(register.total_tips || 0)}</span></div>
+        <div className="cuadre__row"><span>Descuentos otorgados</span><span>{formatCOP(register.total_discounts || 0)}</span></div>
+
+        <div className="cuadre__divider" />
+        <div className="cuadre__section">Movimientos del dia</div>
+        <div className="cuadre__row"><span>Otro tipo de dinero ingresado</span><span style={{ color: '#059669' }}>{formatCOP(register.deposits_total || 0)}</span></div>
+        <div className="cuadre__row"><span>Dinero en gastos</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.expenses_total || 0)}</span></div>
+        <div className="cuadre__row"><span>Dinero retirado</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.withdrawals_total || 0)}</span></div>
+        <div className="cuadre__row"><span>Pago de colaboradores</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.payroll_total || 0)}</span></div>
+
+        <div className="cuadre__total">
+          <span>Total en caja {isClosed ? '(cerrada)' : '(real)'}</span>
+          <span className={cashReal < 0 ? 'cuadre__total--neg' : ''}>{formatCOP(cashReal)}</span>
         </div>
 
-        <div className="gastos__kpi-card gastos__kpi-card--expense" style={{ cursor: 'pointer' }} onClick={() => { setActionModal('withdrawal'); setFormAmount(''); setFormDesc(''); }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <div className="gastos__kpi-data">
-            <span className="gastos__action-label" style={{ color: '#DC2626' }}>Retiro de dinero</span>
-            <span className="gastos__action-hint">Sacar efectivo</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Resumen detallado (estilo cuadre de caja) ─── */}
-      <div className="gastos__card" style={{ marginBottom: 16 }}>
-        <div className="gastos__card-header">
-          <span className="gastos__card-title">Resumen</span>
-          <span className="gastos__card-badge">{cajaPeriod === 'today' ? new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : periodLabel}</span>
-        </div>
-        <div className="gastos__cuadre">
-          {/* Info general del dia */}
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Ingresos del periodo</span>
-            <span className="gastos__cuadre-value" style={{ fontWeight: 700, color: '#059669' }}>{formatCOP(totalRevenue)}</span>
-          </div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Servicios realizados</span>
-            <span className="gastos__cuadre-value">{txCount}</span>
-          </div>
-
-          <div className="gastos__cuadre-divider" />
-
-          {/* Dinero por metodo de pago */}
-          <div className="gastos__cuadre-section-label">Dinero por metodo de pago</div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Dinero en efectivo</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalCash)}</span>
-          </div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Dinero en datafono (tarjeta)</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalCard)}</span>
-          </div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Nequi</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalNequi)}</span>
-          </div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Daviplata</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalDaviplata)}</span>
-          </div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Transferencia</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalTransfer)}</span>
-          </div>
-          <div className="gastos__cuadre-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 8, marginTop: 4 }}>
-            <span className="gastos__cuadre-label">Total en ventas</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalSales)}</span>
-          </div>
-
-          <div className="gastos__cuadre-divider" />
-
-          {/* Otros ingresos y egresos */}
-          <div className="gastos__cuadre-section-label">Otros movimientos del dia</div>
-          {otrosIngresos > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Otro tipo de dinero ingresado</span>
-              <span className="gastos__cuadre-value" style={{ color: '#059669' }}>{formatCOP(otrosIngresos)}</span>
-            </div>
-          )}
-          <div className="gastos__cuadre-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 8, marginTop: 4 }}>
-            <span className="gastos__cuadre-label">Total de dinero en efectivo</span>
-            <span className="gastos__cuadre-value">{formatCOP(totalCash + otrosIngresos)}</span>
-          </div>
-
-          <div className="gastos__cuadre-divider" />
-
-          {gastosHoy > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Dinero en gastos</span>
-              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(gastosHoy)}</span>
-            </div>
-          )}
-          {retirosHoy > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Dinero extraido</span>
-              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(retirosHoy)}</span>
-            </div>
-          )}
-          {nominaHoy > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Pago de colaboradores</span>
-              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(nominaHoy)}</span>
-            </div>
-          )}
-
-          {/* TOTAL EN CAJA */}
-          <div className="gastos__cuadre-total">
-            <span>Total en caja</span>
-            <span className={balance >= 0 ? '' : 'gastos__cuadre-total--negative'}>{formatCOP(balance)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Timeline de movimientos ─── */}
-      <div className="gastos__card">
-        <div className="gastos__card-header">
-          <span className="gastos__card-title">Movimientos de caja</span>
-          <span className="gastos__card-badge">Ultimos 50</span>
-        </div>
-        {movements.length > 0 ? (
-          <div className="gastos__timeline">
-            {movements.map((m, i) => {
-              const color = MOVEMENT_COLORS[m.type] || '#8E8E85';
-              const icon = MOVEMENT_ICONS[m.type] || MOVEMENT_ICONS.adjustment;
-              return (
-                <div key={m.id} className="gastos__timeline-item" style={{ animationDelay: `${i * 0.03}s` }}>
-                  <div className="gastos__timeline-line">
-                    <div className="gastos__timeline-dot" style={{ background: color, boxShadow: `0 0 0 4px ${color}15` }}>
-                      {icon}
-                    </div>
-                    {i < movements.length - 1 && <div className="gastos__timeline-connector" />}
-                  </div>
-                  <div className="gastos__timeline-content">
-                    <div className="gastos__timeline-header">
-                      <span className="gastos__timeline-type" style={{ color }}>{MOVEMENT_LABELS[m.type] || m.type}</span>
-                      <span className="gastos__timeline-time">{fmtDt(m.created_at)}</span>
-                    </div>
-                    <div className="gastos__timeline-body">
-                      <span className="gastos__timeline-desc">{m.description}{m.created_by ? <small> — {m.created_by}</small> : ''}</span>
-                      <div className="gastos__timeline-amounts">
-                        <span className={`gastos__timeline-amount ${m.amount >= 0 ? 'gastos__timeline-amount--positive' : 'gastos__timeline-amount--negative'}`}>
-                          {m.amount >= 0 ? '+' : ''}{formatCOP(m.amount)}
-                        </span>
-                        <span className="gastos__timeline-balance">Saldo: {formatCOP(m.balance_after)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="gastos__empty">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="1.5"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
-            <p>Sin movimientos registrados</p>
-            <small>Los cobros en efectivo aparecen automaticamente</small>
+        {isClosed && (
+          <div className="cuadre__close-summary">
+            <div className="cuadre__row"><span>Esperado en caja</span><span>{formatCOP(register.expected_cash || 0)}</span></div>
+            <div className="cuadre__row"><span>Contado en caja</span><span>{formatCOP(register.counted_cash || 0)}</span></div>
+            <div className="cuadre__row cuadre__row--strong"><span>Diferencia</span><span style={{ color: (register.discrepancy || 0) === 0 ? '#059669' : '#DC2626' }}>{formatCOP(register.discrepancy || 0)}</span></div>
           </div>
         )}
       </div>
 
-      {/* ─── Modal deposito / retiro ─── */}
-      {actionModal && createPortal(
-        <div className="gastos__overlay" onClick={() => !saving && setActionModal(null)}>
-          <div className="gastos__modal" onClick={e => e.stopPropagation()}>
-            <div className="gastos__modal-header">
-              <h3>{actionModal === 'deposit' ? 'Depositar dinero' : 'Retirar dinero'}</h3>
-              <button className="gastos__modal-close" onClick={() => setActionModal(null)} disabled={saving}>&times;</button>
-            </div>
-            <div className="gastos__modal-body">
-              <label className="gastos__field">
-                <span className="gastos__field-label">Monto (COP)</span>
-                <input className="gastos__input" type="number" placeholder="Ej: 50000" value={formAmount} onChange={e => setFormAmount(e.target.value)} autoFocus />
-              </label>
-              <label className="gastos__field">
-                <span className="gastos__field-label">Descripcion</span>
-                <input className="gastos__input" placeholder={actionModal === 'deposit' ? 'Ej: Fondo inicial, cambio...' : 'Ej: Pago proveedor, gastos...'} value={formDesc} onChange={e => setFormDesc(e.target.value)} />
-              </label>
-            </div>
-            <div className="gastos__modal-footer">
-              <button className="gastos__btn gastos__btn--ghost" onClick={() => setActionModal(null)} disabled={saving}>Cancelar</button>
-              <button className={`gastos__btn ${actionModal === 'deposit' ? 'gastos__btn--primary' : 'gastos__btn--danger'}`} disabled={saving || !formAmount || !formDesc.trim()} onClick={handleMovement}>
-                {saving ? 'Guardando...' : actionModal === 'deposit' ? 'Depositar' : 'Retirar'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* SUB-TABS DEL DIA */}
+      <div className="cuadre__subs">
+        {CUADRE_SUBS.map(s => (
+          <button key={s.id} className={`cuadre__sub ${subTab === s.id ? 'cuadre__sub--active' : ''}`} onClick={() => setSubTab(s.id)}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="cuadre__sub-panel">
+        <SubTabContent kind={subTab} data={subData[subTab]} register={register} staff={staff} addNotification={addNotification} />
+      </div>
+
+      {/* MODALES */}
+      {actionModal === 'open' && <OpenModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitOpen} />}
+      {actionModal === 'close' && <CloseModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitClose} expected={register.opening_amount + (register.total_cash || 0)} />}
+      {(actionModal === 'deposit' || actionModal === 'withdrawal') && <MovementModal kind={actionModal} form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitMovement} />}
+      {actionModal === 'responsible' && <ResponsibleModal form={form} setForm={setForm} staff={staff} saving={saving} onClose={closeModal} onSubmit={submitResponsible} />}
+      {actionModal === 'expense' && <ExpenseQuickModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitExpense} />}
     </>
   );
 };
+
+// ─── SubTabContent: renders the table for one of the 6 inline sub-tabs ───
+const SubTabContent = ({ kind, data, register: _register, staff, addNotification: _notify }) => {
+  if (data === null) return <div className="gastos__skeleton"><SkeletonBlock width="100%" height="160px" /></div>;
+  const arr = Array.isArray(data) ? data : (data.items || data.movements || []);
+  if (arr.length === 0) return <div className="gastos__empty"><p>Sin registros para hoy</p></div>;
+
+  const staffName = (id) => staff.find(s => s.id === id)?.name || '';
+
+  if (kind === 'gastos') {
+    return (
+      <table className="cuadre__table">
+        <thead><tr><th>Hora</th><th>Categoria</th><th>Descripcion</th><th>Metodo</th><th className="cuadre__th-right">Monto</th></tr></thead>
+        <tbody>
+          {arr.map(e => (
+            <tr key={e.id}>
+              <td>{fmtTime(e.created_at)}</td>
+              <td><span className="gastos__tag">{e.category}</span></td>
+              <td>{e.description}</td>
+              <td>{e.payment_method || '—'}</td>
+              <td className="cuadre__td-amount" style={{ color: '#DC2626' }}>-{formatCOP(e.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+  if (kind === 'ventas') {
+    return (
+      <table className="cuadre__table">
+        <thead><tr><th>Factura</th><th>Hora</th><th>Cliente</th><th>Servicio/Producto</th><th>Metodo</th><th className="cuadre__th-right">Total</th></tr></thead>
+        <tbody>
+          {arr.map(inv => (
+            <tr key={inv.id}>
+              <td>{inv.invoice_number}</td>
+              <td>{fmtTime(inv.created_at || inv.issued_date)}</td>
+              <td>{inv.client_name}</td>
+              <td>{(inv.items || []).map(i => i.service_name).join(', ') || '—'}</td>
+              <td>{inv.payment_method || '—'}</td>
+              <td className="cuadre__td-amount">{formatCOP(inv.total)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+  if (kind === 'comisiones') {
+    return (
+      <div className="cuadre__commissions">
+        {arr.map(s => (
+          <div key={s.staff_id} className="cuadre__comm-card">
+            <div className="cuadre__comm-head">
+              <strong>{s.staff_name}</strong>
+              <span>{s.staff_role}</span>
+            </div>
+            <div className="cuadre__row"><span>Servicios</span><span>{s.services_count}</span></div>
+            <div className="cuadre__row"><span>Total facturado</span><span>{formatCOP(s.total_revenue)}</span></div>
+            <div className="cuadre__row"><span>Propinas</span><span>{formatCOP(s.tips_total || 0)}</span></div>
+            <div className="cuadre__row"><span>Multas</span><span style={{ color: '#DC2626' }}>-{formatCOP(s.fines_total || 0)}</span></div>
+            <div className="cuadre__row"><span>Pagado</span><span>{formatCOP(s.total_paid || 0)}</span></div>
+            <div className="cuadre__row cuadre__row--strong"><span>Por pagar</span><span style={{ color: s.balance > 0 ? '#DC2626' : '#059669' }}>{formatCOP(s.balance || 0)}</span></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (kind === 'ingresos' || kind === 'retiros') {
+    return (
+      <table className="cuadre__table">
+        <thead><tr><th>Hora</th><th>Responsable</th><th>Descripcion</th><th className="cuadre__th-right">Monto</th></tr></thead>
+        <tbody>
+          {arr.map(m => (
+            <tr key={m.id}>
+              <td>{fmtTime(m.created_at)}</td>
+              <td>{m.created_by || '—'}</td>
+              <td>{m.description}</td>
+              <td className="cuadre__td-amount" style={{ color: kind === 'ingresos' ? '#059669' : '#DC2626' }}>
+                {kind === 'ingresos' ? '+' : '-'}{formatCOP(Math.abs(m.amount))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+  if (kind === 'multas') {
+    return (
+      <table className="cuadre__table">
+        <thead><tr><th>Profesional</th><th>Razon</th><th>Notas</th><th className="cuadre__th-right">Monto</th></tr></thead>
+        <tbody>
+          {arr.map(f => (
+            <tr key={f.id}>
+              <td>{f.staff_name || staffName(f.staff_id)}</td>
+              <td>{f.reason}</td>
+              <td>{f.notes || '—'}</td>
+              <td className="cuadre__td-amount" style={{ color: '#DC2626' }}>{formatCOP(f.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+  return null;
+};
+
+// ─── Modal components ───
+const ModalShell = ({ title, children, footer, onClose, saving }) => createPortal(
+  <div className="gastos__overlay" onClick={() => !saving && onClose()}>
+    <div className="gastos__modal" onClick={e => e.stopPropagation()}>
+      <div className="gastos__modal-header">
+        <h3>{title}</h3>
+        <button className="gastos__modal-close" onClick={onClose} disabled={saving}>&times;</button>
+      </div>
+      <div className="gastos__modal-body">{children}</div>
+      <div className="gastos__modal-footer">{footer}</div>
+    </div>
+  </div>,
+  document.body
+);
+
+const OpenModal = ({ form, setForm, saving, onClose, onSubmit }) => (
+  <ModalShell title="Abrir caja" onClose={onClose} saving={saving} footer={
+    <>
+      <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+      <button className="gastos__btn gastos__btn--primary" onClick={onSubmit} disabled={saving}>{saving ? 'Abriendo...' : 'Abrir caja'}</button>
+    </>
+  }>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Monto inicial en efectivo (COP)</span>
+      <input className="gastos__input" type="number" placeholder="Ej: 200000" value={form.opening_amount || ''} onChange={e => setForm({ ...form, opening_amount: e.target.value })} autoFocus />
+    </label>
+    <small style={{ color: '#666', display: 'block', marginTop: 8 }}>El responsable sera el usuario actual. Podras cambiarlo despues.</small>
+  </ModalShell>
+);
+
+const CloseModal = ({ form, setForm, saving, onClose, onSubmit, expected }) => (
+  <ModalShell title="Cerrar cuadre" onClose={onClose} saving={saving} footer={
+    <>
+      <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+      <button className="gastos__btn gastos__btn--danger" onClick={onSubmit} disabled={saving}>{saving ? 'Cerrando...' : 'Cerrar caja'}</button>
+    </>
+  }>
+    <div className="gastos__field">
+      <span className="gastos__field-label">Esperado en caja</span>
+      <div className="gastos__input" style={{ background: '#F3F4F6', cursor: 'not-allowed' }}>{formatCOP(expected || 0)}</div>
+    </div>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Contado en caja (COP)</span>
+      <input className="gastos__input" type="number" placeholder="Cuenta el efectivo y digita el total" value={form.counted_cash || ''} onChange={e => setForm({ ...form, counted_cash: e.target.value })} autoFocus />
+    </label>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Notas (opcional)</span>
+      <input className="gastos__input" placeholder="Observaciones del cierre" value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })} />
+    </label>
+  </ModalShell>
+);
+
+const MovementModal = ({ kind, form, setForm, saving, onClose, onSubmit }) => (
+  <ModalShell title={kind === 'deposit' ? 'Registrar ingreso a caja' : 'Retiro de dinero'} onClose={onClose} saving={saving} footer={
+    <>
+      <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+      <button className={`gastos__btn ${kind === 'deposit' ? 'gastos__btn--primary' : 'gastos__btn--danger'}`} disabled={saving || !form.amount || !(form.description || '').trim()} onClick={onSubmit}>
+        {saving ? 'Guardando...' : kind === 'deposit' ? 'Depositar' : 'Retirar'}
+      </button>
+    </>
+  }>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Monto (COP)</span>
+      <input className="gastos__input" type="number" placeholder="Ej: 50000" value={form.amount || ''} onChange={e => setForm({ ...form, amount: e.target.value })} autoFocus />
+    </label>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Descripcion</span>
+      <input className="gastos__input" placeholder={kind === 'deposit' ? 'Ej: Cambio recibido, fondo extra...' : 'Ej: Pago a proveedor, prestamo...'} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} />
+    </label>
+  </ModalShell>
+);
+
+const ResponsibleModal = ({ form, setForm, staff, saving, onClose, onSubmit }) => (
+  <ModalShell title="Cambiar responsable de caja" onClose={onClose} saving={saving} footer={
+    <>
+      <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+      <button className="gastos__btn gastos__btn--primary" disabled={saving || !(form.opened_by || '').trim()} onClick={onSubmit}>{saving ? 'Guardando...' : 'Actualizar'}</button>
+    </>
+  }>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Nuevo responsable</span>
+      <input className="gastos__input" list="staff-names" placeholder="Nombre o usuario" value={form.opened_by || ''} onChange={e => setForm({ ...form, opened_by: e.target.value })} autoFocus />
+      <datalist id="staff-names">
+        {staff.map(s => <option key={s.id} value={s.username || s.name}>{s.name}</option>)}
+      </datalist>
+    </label>
+  </ModalShell>
+);
+
+const ExpenseQuickModal = ({ form, setForm, saving, onClose, onSubmit }) => (
+  <ModalShell title="Registrar gasto" onClose={onClose} saving={saving} footer={
+    <>
+      <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+      <button className="gastos__btn gastos__btn--primary" disabled={saving || !form.amount || !(form.description || '').trim()} onClick={onSubmit}>{saving ? 'Guardando...' : 'Registrar'}</button>
+    </>
+  }>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Categoria</span>
+      <select className="gastos__select" value={form.category || 'otros'} onChange={e => setForm({ ...form, category: e.target.value })}>
+        {Object.keys(EXPENSE_CATEGORIES).map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
+    </label>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Descripcion</span>
+      <input className="gastos__input" placeholder="Ej: Compra de productos" value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} autoFocus />
+    </label>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Monto (COP)</span>
+      <input className="gastos__input" type="number" placeholder="0" value={form.amount || ''} onChange={e => setForm({ ...form, amount: e.target.value })} />
+    </label>
+    <label className="gastos__field">
+      <span className="gastos__field-label">Metodo de pago</span>
+      <select className="gastos__select" value={form.payment_method || 'efectivo'} onChange={e => setForm({ ...form, payment_method: e.target.value })}>
+        {PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+      </select>
+    </label>
+  </ModalShell>
+);
 
 // ─── GastosView: CRUD gastos del negocio ───
 const GastosView = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentTo }) => {

@@ -2212,53 +2212,84 @@ def delete_fine(
 
 @router.get("/finances/cash-register")
 def get_cash_register(
+    date_from: Optional[str] = Query(None, description="ISO yyyy-mm-dd; restrict movements to >= this date"),
+    date_to: Optional[str] = Query(None, description="ISO yyyy-mm-dd; restrict movements to <= this date"),
+    type: Optional[str] = Query(None, description="Filter by movement_type: deposit, withdrawal, sale, expense, adjustment"),
+    limit: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Get current cash balance + recent movements."""
+    """Get current cash balance + recent movements.
+
+    With no filters: global balance + 50 most recent movements (legacy behavior).
+    With date_from/date_to: balance is still global, but movements + today_* totals
+    are filtered to the requested range — used by the cuadre sub-tabs to show
+    deposits/withdrawals for the session date.
+    """
     tid = safe_tid(current_user, db)
-    
-    # Current balance = sum of all movements
-    q = db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter()
-    if tid:
-        q = q.filter(CashMovement.tenant_id == tid)
-    balance = int(q.scalar() or 0)
-    
-    # Today's movements
     from routes._helpers import now_colombia
+
+    # Current balance = sum of all movements (always global, not range-filtered)
+    bal_q = db.query(func.coalesce(func.sum(CashMovement.amount), 0))
+    if tid:
+        bal_q = bal_q.filter(CashMovement.tenant_id == tid)
+    balance = int(bal_q.scalar() or 0)
+
+    # Resolve range — default = today
     today = now_colombia().date()
-    today_q = db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
-        func.date(CashMovement.created_at) >= today,
+    try:
+        d_from = date.fromisoformat(date_from) if date_from else today
+        d_to = date.fromisoformat(date_to) if date_to else today
+    except ValueError:
+        raise HTTPException(400, "date_from / date_to deben ser yyyy-mm-dd")
+
+    # Range totals (replaces the old today_total — same shape but accepts range)
+    range_q = db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
+        func.date(CashMovement.created_at) >= d_from,
+        func.date(CashMovement.created_at) <= d_to,
     )
     if tid:
-        today_q = today_q.filter(CashMovement.tenant_id == tid)
-    today_total = int(today_q.scalar() or 0)
-    
-    # Recent movements (last 50)
-    mvq = db.query(CashMovement)
+        range_q = range_q.filter(CashMovement.tenant_id == tid)
+    range_total = int(range_q.scalar() or 0)
+
+    # Movements list (filtered)
+    mvq = db.query(CashMovement).filter(
+        func.date(CashMovement.created_at) >= d_from,
+        func.date(CashMovement.created_at) <= d_to,
+    )
     if tid:
         mvq = mvq.filter(CashMovement.tenant_id == tid)
-    movements = mvq.order_by(CashMovement.created_at.desc()).limit(50).all()
-    
-    # Stats
-    sales_today = 0
-    deposits_today = 0
-    withdrawals_today = 0
+    if type:
+        mvq = mvq.filter(CashMovement.movement_type == type)
+    movements = mvq.order_by(CashMovement.created_at.desc()).limit(limit).all()
+
+    # Per-type totals over the range
+    sales_total = 0
+    deposits_total = 0
+    withdrawals_total = 0
     for m in movements:
-        if m.created_at and m.created_at.date() >= today:
-            if m.movement_type == 'sale':
-                sales_today += m.amount
-            elif m.movement_type == 'deposit':
-                deposits_today += m.amount
-            elif m.movement_type == 'withdrawal':
-                withdrawals_today += abs(m.amount)
-    
+        if m.movement_type == 'sale':
+            sales_total += m.amount or 0
+        elif m.movement_type == 'deposit':
+            deposits_total += m.amount or 0
+        elif m.movement_type == 'withdrawal':
+            withdrawals_total += abs(m.amount or 0)
+
     return {
         "balance": balance,
-        "today_total": today_total,
-        "sales_today": sales_today,
-        "deposits_today": deposits_today,
-        "withdrawals_today": withdrawals_today,
+        "date_from": d_from.isoformat(),
+        "date_to": d_to.isoformat(),
+        # Legacy keys kept so existing callers (Dashboard) don't break — they
+        # now describe the requested range, which defaults to today.
+        "today_total": range_total,
+        "sales_today": sales_total,
+        "deposits_today": deposits_total,
+        "withdrawals_today": withdrawals_total,
+        # New explicit names for the range
+        "range_total": range_total,
+        "sales_total": sales_total,
+        "deposits_total": deposits_total,
+        "withdrawals_total": withdrawals_total,
         "movements": [
             {
                 "id": m.id,

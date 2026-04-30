@@ -11,10 +11,10 @@ from pydantic import BaseModel
 
 from database.connection import get_db
 from database.models import (
-    Admin, Checkout, CheckoutItem, CashRegister,
+    Admin, Checkout, CheckoutItem, CashRegister, CashMovement,
     Appointment, Client, Staff, Service, Tenant,
     VisitHistory, Invoice, InvoiceItem, StaffCommission, StaffServiceCommission,
-    Product, InventoryMovement,
+    Product, InventoryMovement, Expense, StaffPayment,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid, now_colombia
@@ -126,18 +126,48 @@ def _checkout_to_dict(checkout: Checkout) -> dict:
 
 
 def _recalculate_register_totals(db: Session, register: CashRegister, tid):
-    """Recalculate all totals on a CashRegister from completed checkouts of the day."""
+    """Recalculate all totals on a CashRegister from completed checkouts of the day.
+
+    Counts and money amounts are split into services vs products. A line is
+    classified as product when service_name starts with "[Producto]" (same
+    convention as VisitHistory and StaffPayrollSummary). Both classifications
+    are exposed via _register_to_dict so the cuadre can show the same breakdown
+    Weibook does (cantidad/total facturado en servicios vs productos)."""
     q = db.query(Checkout).filter(
         Checkout.status == "completed",
         func.date(Checkout.created_at) == register.date,
     )
     q = _tenant_filter(q, Checkout, tid)
     checkouts = q.all()
+    checkout_ids = [c.id for c in checkouts]
 
     register.total_sales = sum(c.total for c in checkouts)
     register.total_tips = sum(c.tip for c in checkouts)
     register.total_discounts = sum(c.discount_amount for c in checkouts)
     register.transaction_count = len(checkouts)
+
+    # Stash on the register object (NOT persisted columns) so the serializer
+    # can return the service/product split without a schema migration.
+    services_count = 0
+    products_count = 0
+    services_billed = 0
+    products_billed = 0
+    if checkout_ids:
+        items = db.query(CheckoutItem).filter(CheckoutItem.checkout_id.in_(checkout_ids)).all()
+        for it in items:
+            qty = int(it.quantity or 1)
+            line_total = int(it.total or 0)
+            is_product = bool((it.service_name or "").startswith("[Producto]"))
+            if is_product:
+                products_count += qty
+                products_billed += line_total
+            else:
+                services_count += qty
+                services_billed += line_total
+    register._services_count = services_count
+    register._products_count = products_count
+    register._services_billed = services_billed
+    register._products_billed = products_billed
 
     # Totals by payment method
     total_cash = 0
@@ -817,7 +847,7 @@ def open_register(
     db.add(register)
     db.commit()
     db.refresh(register)
-    return _register_to_dict(register)
+    return _register_to_dict(register, db)
 
 
 # ============================================================================
@@ -841,7 +871,9 @@ def get_today_register(
     _recalculate_register_totals(db, register, tid)
     db.commit()
     db.refresh(register)
-    return _register_to_dict(register)
+    # Re-run after refresh so the cached extras (services_count etc.) survive
+    _recalculate_register_totals(db, register, tid)
+    return _register_to_dict(register, db)
 
 
 # ============================================================================
@@ -880,7 +912,44 @@ def close_register(
 
     db.commit()
     db.refresh(register)
-    return _register_to_dict(register)
+    _recalculate_register_totals(db, register, tid)
+    return _register_to_dict(register, db)
+
+
+# ============================================================================
+# 8.b PUT /cash-register/responsible — Change cashier mid-session
+# ============================================================================
+
+class CashRegisterResponsible(BaseModel):
+    opened_by: str  # username of the new responsible person
+
+
+@router.put("/cash-register/responsible")
+def change_register_responsible(
+    data: CashRegisterResponsible,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    tid = safe_tid(current_user, db)
+    today = now_colombia().date()
+
+    register = db.query(CashRegister).filter(CashRegister.date == today)
+    register = _tenant_filter(register, CashRegister, tid).first()
+    if not register:
+        raise HTTPException(status_code=404, detail="La caja no ha sido abierta hoy")
+    if register.status == "closed":
+        raise HTTPException(status_code=400, detail="No puedes cambiar el responsable de una caja cerrada")
+
+    new_responsible = (data.opened_by or "").strip()
+    if not new_responsible:
+        raise HTTPException(status_code=400, detail="opened_by es obligatorio")
+
+    register.opened_by = new_responsible
+    register.updated_at = now_colombia()
+    db.commit()
+    db.refresh(register)
+    _recalculate_register_totals(db, register, tid)
+    return _register_to_dict(register, db)
 
 
 # ============================================================================
@@ -909,8 +978,65 @@ def register_history(
 # SERIALIZER — CashRegister
 # ============================================================================
 
-def _register_to_dict(register: CashRegister) -> dict:
-    return {
+def _compute_register_extras(db: Session, register_date, tid) -> dict:
+    """Compute the day's extras that are NOT stored on CashRegister:
+    deposits/withdrawals (CashMovement), expenses (Expense), payroll (StaffPayment).
+    Returns COP totals split by payment method where relevant.
+
+    cash_real (efectivo en caja al cierre) =
+      opening_amount + total_cash + deposits_cash − withdrawals_cash − expenses_cash − payroll_cash
+    """
+    extras = {
+        "deposits_total": 0, "deposits_cash": 0,
+        "withdrawals_total": 0, "withdrawals_cash": 0,
+        "expenses_total": 0, "expenses_cash": 0,
+        "payroll_total": 0, "payroll_cash": 0,
+    }
+
+    # Cash movements (deposits + withdrawals + adjustments)
+    mvq = db.query(CashMovement).filter(func.date(CashMovement.created_at) == register_date)
+    mvq = _tenant_filter(mvq, CashMovement, tid)
+    for m in mvq.all():
+        amt = int(m.amount or 0)
+        if m.movement_type == "deposit":
+            extras["deposits_total"] += amt
+            extras["deposits_cash"] += amt  # manual deposits are always cash
+        elif m.movement_type == "withdrawal":
+            extras["withdrawals_total"] += abs(amt)
+            extras["withdrawals_cash"] += abs(amt)
+
+    # Business expenses paid today (any method)
+    exq = db.query(Expense).filter(Expense.date == register_date, Expense.deleted_at.is_(None))
+    exq = _tenant_filter(exq, Expense, tid)
+    for e in exq.all():
+        amt = int(e.amount or 0)
+        extras["expenses_total"] += amt
+        if (e.payment_method or "efectivo") == "efectivo":
+            extras["expenses_cash"] += amt
+
+    # Staff payments made today
+    pyq = db.query(StaffPayment).filter(
+        func.date(StaffPayment.paid_at) == register_date,
+        StaffPayment.status == "paid",
+    )
+    pyq = _tenant_filter(pyq, StaffPayment, tid)
+    for p in pyq.all():
+        amt = int(p.amount or 0)
+        extras["payroll_total"] += amt
+        if (p.payment_method or "efectivo") == "efectivo":
+            extras["payroll_cash"] += amt
+
+    return extras
+
+
+def _register_to_dict(register: CashRegister, db: Optional[Session] = None) -> dict:
+    """Serialize CashRegister + day extras + service/product split + cash_real.
+
+    `db` is optional only for backwards compatibility; pass it to include the
+    day extras (deposits/withdrawals/expenses/payroll/cash_real). Without `db`
+    the response only has the persisted columns.
+    """
+    base = {
         "id": register.id,
         "tenant_id": register.tenant_id,
         "date": register.date.isoformat() if register.date else None,
@@ -933,4 +1059,24 @@ def _register_to_dict(register: CashRegister) -> dict:
         "total_discounts": register.total_discounts,
         "transaction_count": register.transaction_count,
         "notes": register.notes,
+        # Service vs product split (set by _recalculate_register_totals)
+        "services_count": getattr(register, "_services_count", 0),
+        "products_count": getattr(register, "_products_count", 0),
+        "services_billed": getattr(register, "_services_billed", 0),
+        "products_billed": getattr(register, "_products_billed", 0),
     }
+
+    if db is not None and register.date is not None:
+        extras = _compute_register_extras(db, register.date, register.tenant_id)
+        base.update(extras)
+        # cash_real = arranque + ventas en efectivo + ingresos manuales − gastos efectivo − retiros − pagos efectivo
+        base["cash_real"] = (
+            int(register.opening_amount or 0)
+            + int(register.total_cash or 0)
+            + extras["deposits_cash"]
+            - extras["expenses_cash"]
+            - extras["withdrawals_cash"]
+            - extras["payroll_cash"]
+        )
+
+    return base
