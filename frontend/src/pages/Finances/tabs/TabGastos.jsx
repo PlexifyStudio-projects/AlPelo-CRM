@@ -164,7 +164,8 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
         const r = await fetch(`${API_URL}/invoices/?date_from=${f}&date_to=${t}&limit=500`, { credentials: 'include' });
         payload = r.ok ? await r.json() : { items: [] };
       } else if (kind === 'comisiones') {
-        const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${f}&period_to=${t}`, { credentials: 'include' });
+        // "Comisiones del día" siempre muestra HOY, no respeta el periodo del header
+        const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${today}&period_to=${today}`, { credentials: 'include' });
         payload = r.ok ? await r.json() : [];
       } else if (kind === 'ingresos') {
         const r = await fetch(`${API_URL}/finances/cash-register?date_from=${f}&date_to=${t}&type=deposit&limit=500`, { credentials: 'include' });
@@ -549,28 +550,53 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
           const earned = Number(s.total_earned) || 0;
           const isExpanded = expandedId === s.staff_id;
           const visits = visitsByStaff[s.staff_id] || [];
+          const initials = (s.staff_name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
           return (
             <div key={s.staff_id} className={`cuadre2__owed-card ${balance > 0 ? 'cuadre2__owed-card--owed' : 'cuadre2__owed-card--ok'} ${isExpanded ? 'cuadre2__owed-card--expanded' : ''}`}>
-              <button className="cuadre2__owed-toggle" onClick={() => toggleExpand(s.staff_id)}>
+              {/* HEAD with avatar */}
+              <div className="cuadre2__owed-header">
+                {s.photo_url
+                  ? <img className="cuadre2__owed-avatar" src={s.photo_url} alt={s.staff_name} />
+                  : <span className="cuadre2__owed-avatar cuadre2__owed-avatar--initials">{initials}</span>}
                 <div className="cuadre2__owed-top">
                   <strong>{s.staff_name}</strong>
                   <small>{s.staff_role || 'Staff'}</small>
                 </div>
-                <div className="cuadre2__owed-vals">
-                  <div>
-                    <span>Generado</span>
-                    <strong>{formatCOP(earned)}</strong>
-                  </div>
-                  <div className="cuadre2__owed-balance">
-                    <span>Por pagar</span>
-                    <strong>{formatCOP(Math.max(0, balance))}</strong>
-                  </div>
+                {balance > 0 && <span className="cuadre2__owed-dot" title="Tiene saldo pendiente" />}
+              </div>
+
+              {/* AMOUNTS */}
+              <div className="cuadre2__owed-vals">
+                <div>
+                  <span>Generado</span>
+                  <strong>{formatCOP(earned)}</strong>
                 </div>
-                <div className="cuadre2__owed-meta">
-                  {s.services_count || 0} servicios · {s.unpaid_services_count || 0} sin pagar
-                  <svg className={`cuadre2__owed-chevron ${isExpanded ? 'cuadre2__owed-chevron--up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                <div className="cuadre2__owed-balance">
+                  <span>Por pagar</span>
+                  <strong>{formatCOP(Math.max(0, balance))}</strong>
                 </div>
-              </button>
+              </div>
+
+              {/* META */}
+              <div className="cuadre2__owed-meta">
+                <span>{s.services_count || 0} servicios · {s.unpaid_services_count || 0} sin pagar</span>
+              </div>
+
+              {/* ACTIONS — always visible */}
+              <div className="cuadre2__owed-cta">
+                {balance > 0 ? (
+                  <button className="cuadre2__owed-pay-btn" onClick={() => openPayModal(s)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Realizar el pago
+                  </button>
+                ) : (
+                  <span className="cuadre2__owed-paid">Al dia</span>
+                )}
+                <button className="cuadre2__owed-detail-btn" onClick={() => toggleExpand(s.staff_id)}>
+                  Ver detalle
+                  <svg className={`cuadre2__owed-chevron ${isExpanded ? 'cuadre2__owed-chevron--up' : ''}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </div>
 
               {isExpanded && (
                 <div className="cuadre2__owed-detail">
@@ -595,24 +621,17 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
                     </ul>
                   )}
 
-                  {/* Breakdown contable estilo Weibook */}
                   <div className="cuadre2__owed-breakdown">
                     <div><span>Cant. servicios</span><strong>{s.services_count || 0}</strong></div>
                     <div><span>Total facturado</span><strong>{formatCOP(s.total_revenue || 0)}</strong></div>
                     <div><span>Propinas</span><strong>{formatCOP(s.tips_total || 0)}</strong></div>
-                    <div><span>Multas</span><strong style={{ color: '#DC2626' }}>−{formatCOP(s.fines_total || 0)}</strong></div>
+                    <div><span>Multas</span><strong style={{ color: '#B91C1C' }}>−{formatCOP(s.fines_total || 0)}</strong></div>
                     <div><span>Pagado</span><strong>{formatCOP(s.total_paid || 0)}</strong></div>
                     <div className="cuadre2__owed-breakdown-total">
                       <span>Total a pagar</span>
                       <strong>{formatCOP(Math.max(0, balance))}</strong>
                     </div>
                   </div>
-
-                  {balance > 0 && (
-                    <button className="cuadre2__owed-pay-btn" onClick={() => openPayModal(s)}>
-                      Pagar al colaborador {formatCOP(balance)}
-                    </button>
-                  )}
                 </div>
               )}
             </div>

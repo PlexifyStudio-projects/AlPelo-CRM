@@ -8865,26 +8865,42 @@
     border-radius: 14px;
     overflow: hidden;
     transition: border-color 0.15s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
     &:hover { border-color: rgba(30, 58, 138, 0.2); box-shadow: 0 8px 24px -14px rgba(15, 23, 42, 0.18); }
     &--owed { border-top: 3px solid $red; }
     &--ok   { border-top: 3px solid $green; }
     &--expanded { box-shadow: 0 12px 32px -16px rgba(15, 23, 42, 0.2); }
   }
-  &__owed-toggle {
-    width: 100%;
-    background: transparent;
-    border: 0;
-    padding: 16px 18px;
-    text-align: left;
-    cursor: pointer;
-    display: flex; flex-direction: column; gap: 12px;
+  &__owed-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px 10px;
+    position: relative;
+  }
+  &__owed-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: $accent-bg;
+    color: $accent;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    &--initials { background: linear-gradient(135deg, #1E3A8A 0%, #312E81 100%); color: #fff; }
+  }
+  &__owed-dot {
+    position: absolute; top: 14px; right: 14px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: $red;
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
   }
   &__owed-top {
     display: flex; flex-direction: column; gap: 2px;
-    strong { font-size: 15px; color: $text; font-weight: 700; }
-    small  { font-size: 11px; color: $muted; text-transform: uppercase; letter-spacing: 0.5px; }
+    flex: 1;
+    strong { font-size: 14px; color: $text; font-weight: 700; }
+    small  { font-size: 10px; color: $muted; text-transform: uppercase; letter-spacing: 0.5px; }
   }
   &__owed-vals {
+    margin: 0 18px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
@@ -8900,11 +8916,55 @@
   &__owed-balance strong { color: $red; font-size: 18px; }
   &__owed-card--ok &__owed-balance strong { color: $green; }
   &__owed-meta {
-    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 18px 0;
     font-size: 11px; color: $muted;
   }
-  &__owed-chevron {
+  &__owed-cta {
+    display: flex; gap: 6px;
+    padding: 10px 14px 14px;
+    align-items: center;
+  }
+  &__owed-pay-btn {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 12px;
+    background: $accent;
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    &:hover { background: #1E40AF; }
+    &:active { transform: scale(0.98); }
+  }
+  &__owed-paid {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    background: rgba(4, 120, 87, 0.08);
+    color: $green;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  &__owed-detail-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid $line;
     color: $muted;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    &:hover { background: $accent-bg; color: $accent; border-color: rgba(30, 58, 138, 0.2); }
+  }
+  &__owed-chevron {
     transition: transform 0.2s;
     &--up { transform: rotate(180deg); }
   }
