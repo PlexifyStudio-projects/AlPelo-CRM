@@ -91,6 +91,8 @@ const CajaView = () => {
   const bentoRef = useRef(null);
   const subsRef = useRef(null);
 
+  const [payrollToday, setPayrollToday] = useState([]);
+
   const loadCore = useCallback(async () => {
     // Independent fetches: a failure on /staff/ must not kill the cuadre.
     let regErr = null;
@@ -108,9 +110,23 @@ const CajaView = () => {
       }
     } catch { /* staff list is optional — datalist just won't have suggestions */ }
 
+    // Comisiones del día (lo que le debemos a todos hoy)
+    try {
+      const r = await fetch(`${API_URL}/staff-payments/summary?period_from=${today}&period_to=${today}`, { credentials: 'include' });
+      if (r.ok) {
+        const data = await r.json();
+        setPayrollToday(Array.isArray(data) ? data : []);
+      }
+    } catch { /* optional */ }
+
     if (regErr) addNotification('Error cargando caja: ' + regErr, 'error');
     setLoading(false);
-  }, [addNotification]);
+  }, [addNotification, today]);
+
+  const owedToday = useMemo(
+    () => payrollToday.reduce((sum, s) => sum + Math.max(0, Number(s.balance) || 0), 0),
+    [payrollToday]
+  );
 
   useEffect(() => { loadCore(); }, [loadCore]);
 
@@ -301,12 +317,16 @@ const CajaView = () => {
               <Counter value={totalSales} className="cuadre2__mini-val" />
             </div>
             <div className="cuadre2__mini">
-              <span className="cuadre2__mini-label">Movimientos</span>
+              <span className="cuadre2__mini-label">Facturas</span>
               <Counter value={register.transaction_count || 0} prefix="" className="cuadre2__mini-val cuadre2__mini-val--alt" />
             </div>
             <div className="cuadre2__mini">
               <span className="cuadre2__mini-label">Propinas</span>
               <Counter value={register.total_tips || 0} className="cuadre2__mini-val" />
+            </div>
+            <div className="cuadre2__mini cuadre2__mini--owed">
+              <span className="cuadre2__mini-label">Por pagar hoy</span>
+              <Counter value={owedToday} className="cuadre2__mini-val cuadre2__mini-val--owed" />
             </div>
           </div>
         </div>
@@ -414,8 +434,48 @@ const CajaView = () => {
         </div>
       </div>
 
+      {/* ═══════════════ POR PAGAR (comisiones del día por staff) ═══════════════ */}
+      {payrollToday.length > 0 && (
+        <div className="cuadre2__owed cuadre2__rise" style={{ '--delay': '350ms' }}>
+          <div className="cuadre2__panel-head">
+            <span>Por pagar hoy · comisiones del equipo</span>
+            <span className="cuadre2__panel-tag">{payrollToday.filter(s => (s.balance || 0) > 0).length} con saldo</span>
+          </div>
+          <div className="cuadre2__owed-grid">
+            {payrollToday
+              .slice()
+              .sort((a, b) => (b.balance || 0) - (a.balance || 0))
+              .map(s => {
+                const balance = Number(s.balance) || 0;
+                const earned = Number(s.total_earned) || 0;
+                return (
+                  <div key={s.staff_id} className={`cuadre2__owed-card ${balance > 0 ? 'cuadre2__owed-card--owed' : 'cuadre2__owed-card--ok'}`}>
+                    <div className="cuadre2__owed-top">
+                      <strong>{s.staff_name}</strong>
+                      <small>{s.staff_role || 'Staff'}</small>
+                    </div>
+                    <div className="cuadre2__owed-vals">
+                      <div>
+                        <span>Generado</span>
+                        <strong>{formatCOP(earned)}</strong>
+                      </div>
+                      <div className="cuadre2__owed-balance">
+                        <span>Por pagar</span>
+                        <strong>{formatCOP(Math.max(0, balance))}</strong>
+                      </div>
+                    </div>
+                    <div className="cuadre2__owed-meta">
+                      {s.services_count || 0} servicios · {s.unpaid_services_count || 0} sin pagar
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* ═══════════════ SUB-TABS PILL NAV + PANEL ═══════════════ */}
-      <div ref={subsRef} className="cuadre2__nav cuadre2__rise" style={{ '--delay': '400ms' }}>
+      <div ref={subsRef} className="cuadre2__nav cuadre2__rise" style={{ '--delay': '450ms' }}>
         {CUADRE_SUBS.map(s => (
           <button key={s.id} className={`cuadre2__nav-item ${subTab === s.id ? 'cuadre2__nav-item--active' : ''}`} onClick={() => setSubTab(s.id)}>
             {s.label}

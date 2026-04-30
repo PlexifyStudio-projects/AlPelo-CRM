@@ -126,34 +126,57 @@ def _checkout_to_dict(checkout: Checkout) -> dict:
 
 
 def _recalculate_register_totals(db: Session, register: CashRegister, tid):
-    """Recalculate all totals on a CashRegister from completed checkouts of the day.
+    """Recalculate totals from Invoices issued today (PRIMARY source of truth).
 
-    Counts and money amounts are split into services vs products. A line is
-    classified as product when service_name starts with "[Producto]" (same
-    convention as VisitHistory and StaffPayrollSummary). Both classifications
-    are exposed via _register_to_dict so the cuadre can show the same breakdown
-    Weibook does (cantidad/total facturado en servicios vs productos)."""
-    q = db.query(Checkout).filter(
-        Checkout.status == "completed",
-        func.date(Checkout.created_at) == register.date,
+    AlPelo bills directly via the Invoice flow (48 invoices/day) instead of
+    the Checkout table — Checkouts are mostly unused. Invoice has all the
+    fields we need: total, discount_amount, payment_method, items with
+    service_name (so we can split services vs products), and items.visit_id
+    to look up tips from VisitHistory.
+
+    A line is classified as product when service_name starts with "[Producto]"
+    (same convention as VisitHistory and StaffPayrollSummary).
+
+    Splits are stashed as Python attrs on the register object (NOT persisted
+    columns) so the serializer returns them without a schema migration."""
+    iq = db.query(Invoice).filter(
+        Invoice.issued_date == register.date,
+        Invoice.status.in_(["paid", "sent"]),
+        Invoice.deleted_at.is_(None),
     )
-    q = _tenant_filter(q, Checkout, tid)
-    checkouts = q.all()
-    checkout_ids = [c.id for c in checkouts]
+    iq = _tenant_filter(iq, Invoice, tid)
+    invoices = iq.all()
+    invoice_ids = [inv.id for inv in invoices]
 
-    register.total_sales = sum(c.total for c in checkouts)
-    register.total_tips = sum(c.tip for c in checkouts)
-    register.total_discounts = sum(c.discount_amount for c in checkouts)
-    register.transaction_count = len(checkouts)
+    register.total_sales = sum(int(inv.total or 0) for inv in invoices)
+    register.total_discounts = sum(int(inv.discount_amount or 0) for inv in invoices)
+    register.transaction_count = len(invoices)
 
-    # Stash on the register object (NOT persisted columns) so the serializer
-    # can return the service/product split without a schema migration.
+    # Methods of payment — bucketed
+    method_totals = {"efectivo": 0, "nequi": 0, "daviplata": 0, "transferencia": 0, "tarjeta": 0}
+    for inv in invoices:
+        m = (inv.payment_method or "efectivo").lower()
+        amt = int(inv.total or 0)
+        if m in ("tarjeta_debito", "tarjeta_credito", "tarjeta"):
+            method_totals["tarjeta"] += amt
+        elif m in method_totals:
+            method_totals[m] += amt
+        else:
+            method_totals["efectivo"] += amt
+    register.total_cash = method_totals["efectivo"]
+    register.total_nequi = method_totals["nequi"]
+    register.total_daviplata = method_totals["daviplata"]
+    register.total_transfer = method_totals["transferencia"]
+    register.total_card = method_totals["tarjeta"]
+
+    # Service vs product split + tips from linked VisitHistory rows
     services_count = 0
     products_count = 0
     services_billed = 0
     products_billed = 0
-    if checkout_ids:
-        items = db.query(CheckoutItem).filter(CheckoutItem.checkout_id.in_(checkout_ids)).all()
+    total_tips = 0
+    if invoice_ids:
+        items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id.in_(invoice_ids)).all()
         for it in items:
             qty = int(it.quantity or 1)
             line_total = int(it.total or 0)
@@ -164,6 +187,13 @@ def _recalculate_register_totals(db: Session, register: CashRegister, tid):
             else:
                 services_count += qty
                 services_billed += line_total
+        # Tips travel on VisitHistory, linked from InvoiceItem.visit_id
+        visit_ids = list({it.visit_id for it in items if it.visit_id})
+        if visit_ids:
+            for v in db.query(VisitHistory).filter(VisitHistory.id.in_(visit_ids)).all():
+                total_tips += int(getattr(v, "tip", 0) or 0)
+
+    register.total_tips = total_tips
     register._services_count = services_count
     register._products_count = products_count
     register._services_billed = services_billed
