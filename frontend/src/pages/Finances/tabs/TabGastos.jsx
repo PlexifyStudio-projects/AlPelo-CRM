@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../../context/NotificationContext';
 import financeService from '../../../services/financeService';
@@ -6,6 +6,36 @@ import {
   Icons, CATEGORY_COLORS, EXPENSE_CATEGORIES, RECURRING_OPTIONS, PAYMENT_METHODS, GASTOS_PERIODS, API_URL,
   formatCOP, SkeletonBlock,
 } from '../financeConstants';
+
+// ─── Animated number — vanilla requestAnimationFrame count-up ───
+const Counter = ({ value, prefix = '$', className = '' }) => {
+  const ref = useRef(null);
+  const prev = useRef(0);
+  const rafId = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const start = prev.current;
+    const end = Number(value) || 0;
+    if (start === end) {
+      ref.current.textContent = `${prefix}${end.toLocaleString('es-CO')}`;
+      return;
+    }
+    const t0 = performance.now();
+    const dur = 800;
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      const v = Math.round(start + (end - start) * eased);
+      if (ref.current) ref.current.textContent = `${prefix}${v.toLocaleString('es-CO')}`;
+      if (p < 1) rafId.current = requestAnimationFrame(step);
+      else prev.current = end;
+    };
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    rafId.current = requestAnimationFrame(step);
+    return () => { if (rafId.current) cancelAnimationFrame(rafId.current); };
+  }, [value, prefix]);
+  return <span ref={ref} className={className}>{prefix}0</span>;
+};
 
 // ─── Sub-tab definitions ───
 const SUB_TABS = [
@@ -52,6 +82,14 @@ const CajaView = () => {
   const [subData, setSubData] = useState({ gastos: null, ventas: null, comisiones: null, ingresos: null, retiros: null, multas: null });
 
   const today = todayISO();
+
+  // Entrance animation orchestrated via CSS keyframes + animation-delay (no JS deps).
+  // Each section gets a `cuadre2__rise` class; staggered delays come from --i CSS var on children.
+  const heroRef = useRef(null);
+  const actionsRef = useRef(null);
+  const metricsRef = useRef(null);
+  const bentoRef = useRef(null);
+  const subsRef = useRef(null);
 
   const loadCore = useCallback(async () => {
     // Independent fetches: a failure on /staff/ must not kill the cuadre.
@@ -206,152 +244,191 @@ const CajaView = () => {
     </div>
   );
 
-  // ── Sin abrir → empty state con CTA ──
-  if (!register || register.status === 'not_opened') {
-    return (
-      <>
-        <div className="cuadre__empty">
-          <div className="cuadre__empty-icon">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
-          </div>
-          <h3>La caja del dia no esta abierta</h3>
-          <p>Abre la caja con el monto inicial en efectivo para empezar a registrar movimientos del dia.</p>
-          <button className="gastos__btn gastos__btn--primary" onClick={() => openModal('open', { opening_amount: '' })}>
-            Abrir caja
-          </button>
-        </div>
-        {actionModal === 'open' && <OpenModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitOpen} />}
-      </>
-    );
-  }
+  // ── Caja siempre abierta — backend auto-crea sesion si no existe ──
+  // Defensive fallback: si por alguna razon llega null, mostramos placeholder.
+  if (!register) return <div className="gastos__empty"><p>Cargando caja del dia...</p></div>;
 
-  // ── Caja abierta o cerrada ──
-  const isClosed = register.status === 'closed';
   const cashReal = register.cash_real ?? 0;
   const totalSales = register.total_sales || 0;
+  const totalMethodsBig = Math.max(register.total_cash, register.total_card, register.total_nequi, register.total_daviplata, register.total_transfer, 1);
+  const methods = [
+    { key: 'cash',      label: 'Efectivo',     val: register.total_cash || 0,       color: '#10B981', icon: '\u{1F4B5}' },
+    { key: 'card',      label: 'Datafono',     val: register.total_card || 0,       color: '#6366F1', icon: '\u{1F4B3}' },
+    { key: 'nequi',     label: 'Nequi',        val: register.total_nequi || 0,      color: '#EC4899', icon: 'N' },
+    { key: 'daviplata', label: 'Daviplata',    val: register.total_daviplata || 0,  color: '#DC2626', icon: 'D' },
+    { key: 'transfer',  label: 'Transferencia',val: register.total_transfer || 0,   color: '#3B82F6', icon: '\u{2B83}' },
+  ];
 
   return (
     <>
-      {/* HEADER de sesion */}
-      <div className="cuadre__head">
-        <div className="cuadre__head-left">
-          <span className={`cuadre__status cuadre__status--${register.status}`}>
-            <span className="cuadre__status-dot" />
-            {isClosed ? 'Cerrada' : 'Abierta'}
-          </span>
-          <div className="cuadre__head-meta">
-            <span><strong>{register.opened_by || '—'}</strong> · responsable</span>
-            <span>Apertura {fmtTime(register.opened_at)}</span>
-            {isClosed && <span>Cierre {fmtTime(register.closed_at)}</span>}
+      {/* ═══════════════════ HERO ═══════════════════ */}
+      <div ref={heroRef} className="cuadre2__hero cuadre2__rise" style={{ '--delay': '0ms' }}>
+        <div className="cuadre2__hero-bg" />
+        <div className="cuadre2__hero-grid">
+          <div className="cuadre2__hero-left">
+            <div className="cuadre2__status-row">
+              <span className="cuadre2__status">
+                <span className="cuadre2__status-pulse" />
+                Caja activa
+              </span>
+              <span className="cuadre2__date">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+            </div>
+
+            <div className="cuadre2__hero-label">Total en caja</div>
+            <Counter value={cashReal} className="cuadre2__hero-amount" />
+
+            <div className="cuadre2__hero-meta">
+              <button className="cuadre2__chip" onClick={() => openModal('responsible', { opened_by: register.opened_by || '' })}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-8 0v2"/></svg>
+                {register.opened_by || 'sin responsable'}
+                <small>cambiar</small>
+              </button>
+              <button className="cuadre2__chip" onClick={() => openModal('base', { opening_amount: register.opening_amount || 0 })}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Base {formatCOP(register.opening_amount || 0)}
+                <small>editar</small>
+              </button>
+              <button className="cuadre2__chip cuadre2__chip--ghost" onClick={refresh}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Recargar
+              </button>
+            </div>
+          </div>
+
+          <div className="cuadre2__hero-right">
+            <div className="cuadre2__mini">
+              <span className="cuadre2__mini-label">Ventas hoy</span>
+              <Counter value={totalSales} className="cuadre2__mini-val" />
+            </div>
+            <div className="cuadre2__mini">
+              <span className="cuadre2__mini-label">Movimientos</span>
+              <Counter value={register.transaction_count || 0} prefix="" className="cuadre2__mini-val cuadre2__mini-val--alt" />
+            </div>
+            <div className="cuadre2__mini">
+              <span className="cuadre2__mini-label">Propinas</span>
+              <Counter value={register.total_tips || 0} className="cuadre2__mini-val" />
+            </div>
           </div>
         </div>
-        <div className="cuadre__head-right">
-          <span className="cuadre__head-cash">
-            <small>Total en caja</small>
-            <strong>{formatCOP(cashReal)}</strong>
-          </span>
-        </div>
       </div>
 
-      {/* 6 ACCIONES */}
-      <div className="cuadre__actions">
-        {!isClosed && (
-          <button className="cuadre__action cuadre__action--close" onClick={() => openModal('close', { counted_cash: cashReal, notes: '' })}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/><line x1="9" y1="9" x2="15" y2="9"/></svg>
-            <span>Cerrar cuadre</span>
-          </button>
-        )}
-        {isClosed && (
-          <button className="cuadre__action cuadre__action--reopen" onClick={() => openModal('open', { opening_amount: register.opening_amount })}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            <span>Reabrir caja</span>
-          </button>
-        )}
-        <button className="cuadre__action" onClick={() => openModal('expense', { amount: '', description: '', category: 'otros', payment_method: 'efectivo' })} disabled={isClosed}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Registrar gasto</span>
+      {/* ═══════════════ ACTION DOCK ═══════════════ */}
+      <div ref={actionsRef} className="cuadre2__dock cuadre2__rise" style={{ '--delay': '120ms' }}>
+        <button className="cuadre2__dock-item cuadre2__dock-item--income" onClick={() => openModal('deposit', { amount: '', description: '' })}>
+          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          <span>Ingreso</span>
         </button>
-        <button className="cuadre__action" onClick={() => openModal('deposit', { amount: '', description: '' })} disabled={isClosed}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>Registrar ingreso</span>
+        <button className="cuadre2__dock-item cuadre2__dock-item--expense" onClick={() => openModal('expense', { amount: '', description: '', category: 'otros', payment_method: 'efectivo' })}>
+          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+          <span>Gasto</span>
         </button>
-        <button className="cuadre__action" onClick={() => openModal('responsible', { opened_by: register.opened_by || '' })} disabled={isClosed}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Cambiar responsable</span>
+        <button className="cuadre2__dock-item cuadre2__dock-item--withdraw" onClick={() => openModal('withdrawal', { amount: '', description: '' })}>
+          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span>
+          <span>Retiro</span>
         </button>
-        <button className="cuadre__action" onClick={() => openModal('withdrawal', { amount: '', description: '' })} disabled={isClosed}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-          <span>Retiro de dinero</span>
-        </button>
-        <button className="cuadre__action" onClick={() => refresh()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          <span>Recargar</span>
+        <button className="cuadre2__dock-item cuadre2__dock-item--snapshot" onClick={() => openModal('close', { counted_cash: cashReal, notes: '' })}>
+          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg></span>
+          <span>Corte</span>
         </button>
       </div>
 
-      {/* RESUMEN CONTABLE */}
-      <div className="cuadre__resumen">
-        <div className="cuadre__card-header">
-          <span className="cuadre__card-title">Resumen del dia</span>
-          <span className="cuadre__card-badge">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-        </div>
-
-        <div className="cuadre__row"><span>Dinero base (apertura)</span><span>{formatCOP(register.opening_amount || 0)}</span></div>
-
-        <div className="cuadre__divider" />
-        <div className="cuadre__section">Ventas por metodo de pago</div>
-        <div className="cuadre__row"><span>Efectivo</span><span>{formatCOP(register.total_cash || 0)}</span></div>
-        <div className="cuadre__row"><span>Tarjeta (datafono)</span><span>{formatCOP(register.total_card || 0)}</span></div>
-        <div className="cuadre__row"><span>Nequi</span><span>{formatCOP(register.total_nequi || 0)}</span></div>
-        <div className="cuadre__row"><span>Daviplata</span><span>{formatCOP(register.total_daviplata || 0)}</span></div>
-        <div className="cuadre__row"><span>Transferencia</span><span>{formatCOP(register.total_transfer || 0)}</span></div>
-        <div className="cuadre__row cuadre__row--strong"><span>Total en ventas</span><span>{formatCOP(totalSales)}</span></div>
-
-        <div className="cuadre__divider" />
-        <div className="cuadre__section">Detalle de ventas</div>
-        <div className="cuadre__row"><span>Facturado en servicios</span><span>{formatCOP(register.services_billed || 0)}</span></div>
-        <div className="cuadre__row"><span>Facturado en productos</span><span>{formatCOP(register.products_billed || 0)}</span></div>
-        <div className="cuadre__row"><span>Cantidad de servicios</span><span>{register.services_count || 0}</span></div>
-        <div className="cuadre__row"><span>Cantidad de productos</span><span>{register.products_count || 0}</span></div>
-        <div className="cuadre__row"><span>Propinas</span><span>{formatCOP(register.total_tips || 0)}</span></div>
-        <div className="cuadre__row"><span>Descuentos otorgados</span><span>{formatCOP(register.total_discounts || 0)}</span></div>
-
-        <div className="cuadre__divider" />
-        <div className="cuadre__section">Movimientos del dia</div>
-        <div className="cuadre__row"><span>Otro tipo de dinero ingresado</span><span style={{ color: '#059669' }}>{formatCOP(register.deposits_total || 0)}</span></div>
-        <div className="cuadre__row"><span>Dinero en gastos</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.expenses_total || 0)}</span></div>
-        <div className="cuadre__row"><span>Dinero retirado</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.withdrawals_total || 0)}</span></div>
-        <div className="cuadre__row"><span>Pago de colaboradores</span><span style={{ color: '#DC2626' }}>-{formatCOP(register.payroll_total || 0)}</span></div>
-
-        <div className="cuadre__total">
-          <span>Total en caja {isClosed ? '(cerrada)' : '(real)'}</span>
-          <span className={cashReal < 0 ? 'cuadre__total--neg' : ''}>{formatCOP(cashReal)}</span>
-        </div>
-
-        {isClosed && (
-          <div className="cuadre__close-summary">
-            <div className="cuadre__row"><span>Esperado en caja</span><span>{formatCOP(register.expected_cash || 0)}</span></div>
-            <div className="cuadre__row"><span>Contado en caja</span><span>{formatCOP(register.counted_cash || 0)}</span></div>
-            <div className="cuadre__row cuadre__row--strong"><span>Diferencia</span><span style={{ color: (register.discrepancy || 0) === 0 ? '#059669' : '#DC2626' }}>{formatCOP(register.discrepancy || 0)}</span></div>
+      {/* ═══════════════ MÉTRICAS GRID ═══════════════ */}
+      <div ref={metricsRef} className="cuadre2__metrics cuadre2__rise" style={{ '--delay': '200ms' }}>
+        <div className="cuadre2__metric cuadre2__metric--svc">
+          <div className="cuadre2__metric-head">
+            <span className="cuadre2__metric-label">Servicios</span>
+            <span className="cuadre2__metric-pill">{register.services_count || 0}</span>
           </div>
-        )}
+          <Counter value={register.services_billed || 0} className="cuadre2__metric-val" />
+          <div className="cuadre2__metric-bar"><div style={{ width: `${(register.services_billed || 0) / Math.max(totalSales, 1) * 100}%` }} /></div>
+        </div>
+        <div className="cuadre2__metric cuadre2__metric--prod">
+          <div className="cuadre2__metric-head">
+            <span className="cuadre2__metric-label">Productos</span>
+            <span className="cuadre2__metric-pill">{register.products_count || 0}</span>
+          </div>
+          <Counter value={register.products_billed || 0} className="cuadre2__metric-val" />
+          <div className="cuadre2__metric-bar"><div style={{ width: `${(register.products_billed || 0) / Math.max(totalSales, 1) * 100}%` }} /></div>
+        </div>
+        <div className="cuadre2__metric cuadre2__metric--gain">
+          <div className="cuadre2__metric-head">
+            <span className="cuadre2__metric-label">Ingresos extra</span>
+            <span className="cuadre2__metric-trend cuadre2__metric-trend--up">+</span>
+          </div>
+          <Counter value={register.deposits_total || 0} className="cuadre2__metric-val cuadre2__metric-val--pos" />
+          <small>Depositos manuales del dia</small>
+        </div>
+        <div className="cuadre2__metric cuadre2__metric--out">
+          <div className="cuadre2__metric-head">
+            <span className="cuadre2__metric-label">Salidas</span>
+            <span className="cuadre2__metric-trend cuadre2__metric-trend--down">−</span>
+          </div>
+          <Counter value={(register.expenses_total || 0) + (register.withdrawals_total || 0) + (register.payroll_total || 0)} className="cuadre2__metric-val cuadre2__metric-val--neg" />
+          <small>Gastos + retiros + nomina</small>
+        </div>
       </div>
 
-      {/* SUB-TABS DEL DIA */}
-      <div className="cuadre__subs">
+      {/* ═══════════════ BENTO: METHODS + LEDGER ═══════════════ */}
+      <div ref={bentoRef} className="cuadre2__bento cuadre2__rise" style={{ '--delay': '300ms' }}>
+        <div className="cuadre2__panel cuadre2__panel--methods">
+          <div className="cuadre2__panel-head">
+            <span>Metodos de pago</span>
+            <span className="cuadre2__panel-tag">Hoy</span>
+          </div>
+          <div className="cuadre2__methods">
+            {methods.map(m => (
+              <div key={m.key} className="cuadre2__method">
+                <div className="cuadre2__method-head">
+                  <span className="cuadre2__method-icon" style={{ background: `${m.color}1a`, color: m.color }}>{m.icon}</span>
+                  <span className="cuadre2__method-name">{m.label}</span>
+                  <span className="cuadre2__method-val">{formatCOP(m.val)}</span>
+                </div>
+                <div className="cuadre2__method-bar">
+                  <div style={{ width: `${(m.val / totalMethodsBig) * 100}%`, background: m.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="cuadre2__panel cuadre2__panel--ledger">
+          <div className="cuadre2__panel-head">
+            <span>Cuadre del dia</span>
+            <span className="cuadre2__panel-tag">Real time</span>
+          </div>
+          <div className="cuadre2__ledger">
+            <div className="cuadre2__ledger-row"><span>+ Base de apertura</span><strong>{formatCOP(register.opening_amount || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>+ Ventas en efectivo</span><strong>{formatCOP(register.total_cash || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>+ Otros ingresos</span><strong style={{ color: '#10B981' }}>{formatCOP(register.deposits_total || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Gastos</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.expenses_total || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Retiros</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.withdrawals_total || 0)}</strong></div>
+            <div className="cuadre2__ledger-row"><span>− Pago colaboradores</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.payroll_total || 0)}</strong></div>
+            <div className="cuadre2__ledger-total">
+              <span>= Efectivo en caja</span>
+              <Counter value={cashReal} className={cashReal < 0 ? 'cuadre2__neg' : ''} />
+            </div>
+            {register.total_tips > 0 && (
+              <div className="cuadre2__ledger-foot">Propinas registradas aparte: <strong>{formatCOP(register.total_tips)}</strong></div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════ SUB-TABS PILL NAV + PANEL ═══════════════ */}
+      <div ref={subsRef} className="cuadre2__nav cuadre2__rise" style={{ '--delay': '400ms' }}>
         {CUADRE_SUBS.map(s => (
-          <button key={s.id} className={`cuadre__sub ${subTab === s.id ? 'cuadre__sub--active' : ''}`} onClick={() => setSubTab(s.id)}>
+          <button key={s.id} className={`cuadre2__nav-item ${subTab === s.id ? 'cuadre2__nav-item--active' : ''}`} onClick={() => setSubTab(s.id)}>
             {s.label}
           </button>
         ))}
       </div>
 
-      <div className="cuadre__sub-panel">
+      <div className="cuadre2__nav-panel" key={subTab}>
         <SubTabContent kind={subTab} data={subData[subTab]} register={register} staff={staff} addNotification={addNotification} />
       </div>
 
       {/* MODALES */}
-      {actionModal === 'open' && <OpenModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitOpen} />}
+      {actionModal === 'base' && <BaseModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitOpen} />}
       {actionModal === 'close' && <CloseModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitClose} expected={register.opening_amount + (register.total_cash || 0)} />}
       {(actionModal === 'deposit' || actionModal === 'withdrawal') && <MovementModal kind={actionModal} form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitMovement} />}
       {actionModal === 'responsible' && <ResponsibleModal form={form} setForm={setForm} staff={staff} saving={saving} onClose={closeModal} onSubmit={submitResponsible} />}
@@ -479,18 +556,18 @@ const ModalShell = ({ title, children, footer, onClose, saving }) => createPorta
   document.body
 );
 
-const OpenModal = ({ form, setForm, saving, onClose, onSubmit }) => (
-  <ModalShell title="Abrir caja" onClose={onClose} saving={saving} footer={
+const BaseModal = ({ form, setForm, saving, onClose, onSubmit }) => (
+  <ModalShell title="Editar dinero base" onClose={onClose} saving={saving} footer={
     <>
       <button className="gastos__btn gastos__btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
-      <button className="gastos__btn gastos__btn--primary" onClick={onSubmit} disabled={saving}>{saving ? 'Abriendo...' : 'Abrir caja'}</button>
+      <button className="gastos__btn gastos__btn--primary" onClick={onSubmit} disabled={saving}>{saving ? 'Guardando...' : 'Actualizar'}</button>
     </>
   }>
     <label className="gastos__field">
       <span className="gastos__field-label">Monto inicial en efectivo (COP)</span>
       <input className="gastos__input" type="number" placeholder="Ej: 200000" value={form.opening_amount || ''} onChange={e => setForm({ ...form, opening_amount: e.target.value })} autoFocus />
     </label>
-    <small style={{ color: '#666', display: 'block', marginTop: 8 }}>El responsable sera el usuario actual. Podras cambiarlo despues.</small>
+    <small style={{ color: '#666', display: 'block', marginTop: 8 }}>El efectivo con el que arrancaste el dia. Se usa como base para calcular el total real en caja.</small>
   </ModalShell>
 );
 

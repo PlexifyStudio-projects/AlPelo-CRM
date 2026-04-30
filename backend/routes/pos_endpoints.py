@@ -864,8 +864,29 @@ def get_today_register(
 
     register = db.query(CashRegister).filter(CashRegister.date == today)
     register = _tenant_filter(register, CashRegister, tid).first()
+    # Auto-open: the cuadre is always available. If no register exists for today,
+    # create one with opening_amount=0 owned by the current user. Owners can
+    # adjust the base amount and responsible later via the cuadre actions.
     if not register:
-        return {"status": "not_opened", "date": today.isoformat(), "message": "La caja no ha sido abierta hoy"}
+        register = CashRegister(
+            tenant_id=tid,
+            date=today,
+            status="open",
+            opening_amount=0,
+            opened_by=getattr(current_user, "username", None),
+            opened_at=now_colombia(),
+        )
+        db.add(register)
+        db.commit()
+        db.refresh(register)
+    elif register.status == "closed":
+        # Reopen automatically — the cuadre stays available even after a
+        # manual close (close is now a snapshot for the books, not a lock).
+        register.status = "open"
+        register.closed_by = None
+        register.closed_at = None
+        register.counted_cash = None
+        register.discrepancy = None
 
     # Recalculate live totals from checkouts. Skip db.refresh() afterwards —
     # the in-memory object is already up to date and refreshing would discard
