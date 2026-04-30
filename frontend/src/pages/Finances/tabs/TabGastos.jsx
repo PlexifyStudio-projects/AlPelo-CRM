@@ -52,6 +52,7 @@ const CUADRE_SUBS = [
   { id: 'ingresos', label: 'Ingresos a caja' },
   { id: 'retiros', label: 'Retiros' },
   { id: 'multas', label: 'Multas' },
+  { id: 'liquidacion', label: 'Liquidacion' },
 ];
 
 // ─── Helpers ───
@@ -287,213 +288,118 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
   const cashReal = register.cash_real ?? 0;
   const totalSales = register.total_sales || 0;
   const totalMethodsBig = Math.max(register.total_cash, register.total_card, register.total_nequi, register.total_daviplata, register.total_transfer, 1);
-  const methods = [
-    { key: 'cash',      label: 'Efectivo',     val: register.total_cash || 0,       color: '#10B981', icon: '\u{1F4B5}' },
-    { key: 'card',      label: 'Datafono',     val: register.total_card || 0,       color: '#6366F1', icon: '\u{1F4B3}' },
-    { key: 'nequi',     label: 'Nequi',        val: register.total_nequi || 0,      color: '#EC4899', icon: 'N' },
-    { key: 'daviplata', label: 'Daviplata',    val: register.total_daviplata || 0,  color: '#DC2626', icon: 'D' },
-    { key: 'transfer',  label: 'Transferencia',val: register.total_transfer || 0,   color: '#3B82F6', icon: '\u{2B83}' },
-  ];
+  const fmtDate = (iso) => iso ? new Date(iso + 'T12:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
+  const totalOut = (register.expenses_total || 0) + (register.withdrawals_total || 0) + (register.payroll_total || 0);
 
   return (
     <>
-      {/* ═══════════════════ HERO ═══════════════════ */}
-      <div ref={heroRef} className="cuadre2__hero cuadre2__rise" style={{ '--delay': '0ms' }}>
-        <div className="cuadre2__hero-bg" />
-        <div className="cuadre2__hero-grid">
-          <div className="cuadre2__hero-left">
-            <div className="cuadre2__status-row">
-              <span className="cuadre2__status">
-                <span className="cuadre2__status-pulse" />
-                Caja activa
-              </span>
-              <span className="cuadre2__date">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-              <span className="cuadre2__period-tag">Periodo: {range.label}</span>
-            </div>
+      {/* ═══════════════════ HEADER (corporate, single line) ═══════════════════ */}
+      <div ref={heroRef} className="cuadre2__head cuadre2__rise" style={{ '--delay': '0ms' }}>
+        <div className="cuadre2__head-left">
+          <h2 className="cuadre2__title">Cuadre de caja del periodo</h2>
+          <div className="cuadre2__head-meta">
+            <span><strong>{register.opened_by || 'Sin responsable'}</strong></span>
+            <span className="cuadre2__sep">·</span>
+            <span>Apertura {fmtTime(register.opened_at) || '—'}</span>
+            <span className="cuadre2__sep">·</span>
+            <span>Periodo: <strong>{range.label}</strong></span>
+          </div>
+        </div>
+        <div className="cuadre2__head-right">
+          <span className="cuadre2__head-cash-label">Total en caja</span>
+          <Counter value={cashReal} className={`cuadre2__head-cash ${cashReal < 0 ? 'cuadre2__head-cash--neg' : ''}`} />
+        </div>
+      </div>
 
-            <div className="cuadre2__hero-label">Efectivo en caja (acumulado)</div>
-            <Counter value={cashReal} className="cuadre2__hero-amount" />
+      {/* ═══════════════ 6 ACCIONES (estilo Weibook, monocromo) ═══════════════ */}
+      <div ref={actionsRef} className="cuadre2__actions cuadre2__rise" style={{ '--delay': '80ms' }}>
+        <button className="cuadre2__act cuadre2__act--primary" onClick={() => openModal('close', { counted_cash: cashReal, notes: '' })}>
+          <span className="cuadre2__act-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+          </span>
+          <div>
+            <strong>{formatCOP(cashReal)}</strong>
+            <small>Cerrar cuadre del dia</small>
+          </div>
+        </button>
+        <button className="cuadre2__act" onClick={() => openModal('expense', { amount: '', description: '', category: 'otros', payment_method: 'efectivo' })}>
+          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+          <span>Registrar nuevo gasto</span>
+        </button>
+        <button className="cuadre2__act" onClick={() => openModal('deposit', { amount: '', description: '' })}>
+          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+          <span>Registrar ingreso a caja</span>
+        </button>
+        <button className="cuadre2__act" onClick={() => openModal('responsible', { opened_by: register.opened_by || '' })}>
+          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg></span>
+          <span>Cambiar responsable</span>
+        </button>
+        <button className="cuadre2__act" onClick={() => openModal('withdrawal', { amount: '', description: '' })}>
+          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9h18l-1 12H4z"/><path d="M9 9V5a3 3 0 0 1 6 0v4"/></svg></span>
+          <span>Retiro de dinero</span>
+        </button>
+        <button className="cuadre2__act" onClick={refresh}>
+          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
+          <span>Opciones</span>
+        </button>
+      </div>
 
-            <div className="cuadre2__hero-meta">
-              <button className="cuadre2__chip" onClick={() => openModal('responsible', { opened_by: register.opened_by || '' })}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-8 0v2"/></svg>
-                {register.opened_by || 'sin responsable'}
-                <small>cambiar</small>
+      {/* ═══════════════ RESUMEN CONTABLE (estilo Weibook, single card) ═══════════════ */}
+      <div ref={metricsRef} className="cuadre2__sheet cuadre2__rise" style={{ '--delay': '160ms' }}>
+        <div className="cuadre2__sheet-head">
+          <h3>Resumen</h3>
+          <span>{range.label}</span>
+        </div>
+
+        <div className="cuadre2__sheet-body">
+          <div className="cuadre2__sheet-row"><span>Responsable</span><strong>{register.opened_by || '—'}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Fecha de apertura</span><strong>{fmtDate(register.date)}</strong></div>
+
+          <div className="cuadre2__sheet-divider" />
+
+          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Transferencia bancaria</span><strong>{formatCOP(register.total_transfer || 0)}</strong></div>
+          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Efectivo</span><strong>{formatCOP(register.total_cash || 0)}</strong></div>
+
+          <div className="cuadre2__sheet-divider" />
+
+          <div className="cuadre2__sheet-row"><span>Dinero en datafono</span><strong>{formatCOP(register.total_card || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Nequi</span><strong>{formatCOP(register.total_nequi || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Daviplata</span><strong>{formatCOP(register.total_daviplata || 0)}</strong></div>
+          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Total en ventas</span><strong>{formatCOP(totalSales)}</strong></div>
+
+          <div className="cuadre2__sheet-divider" />
+
+          <div className="cuadre2__sheet-row"><span>Facturado en servicios</span><strong>{formatCOP(register.services_billed || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Facturado en productos</span><strong>{formatCOP(register.products_billed || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Cantidad en servicios</span><strong>{register.services_count || 0}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Cantidad en productos</span><strong>{register.products_count || 0}</strong></div>
+
+          <div className="cuadre2__sheet-divider" />
+
+          <div className="cuadre2__sheet-row">
+            <span>
+              Dinero base
+              <button className="cuadre2__sheet-edit" onClick={() => openModal('base', { opening_amount: register.opening_amount || 0 })} title="Editar dinero base">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
               </button>
-              <button className="cuadre2__chip" onClick={() => openModal('base', { opening_amount: register.opening_amount || 0 })}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                Base {formatCOP(register.opening_amount || 0)}
-                <small>editar</small>
-              </button>
-              <button className="cuadre2__chip cuadre2__chip--ghost" onClick={refresh}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Recargar
-              </button>
-            </div>
+            </span>
+            <strong>{formatCOP(register.opening_amount || 0)}</strong>
           </div>
+          <div className="cuadre2__sheet-row"><span>Otro tipo de dinero ingresado</span><strong>{formatCOP(register.deposits_total || 0)}</strong></div>
+          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Total de dinero en efectivo</span><strong>{formatCOP((register.opening_amount || 0) + (register.total_cash || 0) + (register.deposits_total || 0))}</strong></div>
 
-          <div className="cuadre2__hero-right">
-            <div className="cuadre2__mini">
-              <span className="cuadre2__mini-label">Ventas hoy</span>
-              <Counter value={totalSales} className="cuadre2__mini-val" />
-            </div>
-            <div className="cuadre2__mini">
-              <span className="cuadre2__mini-label">Facturas</span>
-              <Counter value={register.transaction_count || 0} prefix="" className="cuadre2__mini-val cuadre2__mini-val--alt" />
-            </div>
-            <div className="cuadre2__mini">
-              <span className="cuadre2__mini-label">Propinas</span>
-              <Counter value={register.total_tips || 0} className="cuadre2__mini-val" />
-            </div>
-            <div className="cuadre2__mini cuadre2__mini--owed">
-              <span className="cuadre2__mini-label">Por pagar hoy</span>
-              <Counter value={owedToday} className="cuadre2__mini-val cuadre2__mini-val--owed" />
-            </div>
-          </div>
+          <div className="cuadre2__sheet-divider" />
+
+          <div className="cuadre2__sheet-row"><span>Dinero en gastos</span><strong className="cuadre2__neg">(-){formatCOP(register.expenses_total || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Dinero retirado</span><strong className="cuadre2__neg">(-){formatCOP(register.withdrawals_total || 0)}</strong></div>
+          <div className="cuadre2__sheet-row"><span>Pago de colaboradores</span><strong className="cuadre2__neg">(-){formatCOP(register.payroll_total || 0)}</strong></div>
+        </div>
+
+        <div className="cuadre2__sheet-total">
+          <span>Total en caja</span>
+          <strong className={cashReal < 0 ? 'cuadre2__neg' : ''}>{formatCOP(cashReal)}</strong>
         </div>
       </div>
-
-      {/* ═══════════════ ACTION DOCK ═══════════════ */}
-      <div ref={actionsRef} className="cuadre2__dock cuadre2__rise" style={{ '--delay': '120ms' }}>
-        <button className="cuadre2__dock-item cuadre2__dock-item--income" onClick={() => openModal('deposit', { amount: '', description: '' })}>
-          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-          <span>Ingreso</span>
-        </button>
-        <button className="cuadre2__dock-item cuadre2__dock-item--expense" onClick={() => openModal('expense', { amount: '', description: '', category: 'otros', payment_method: 'efectivo' })}>
-          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-          <span>Gasto</span>
-        </button>
-        <button className="cuadre2__dock-item cuadre2__dock-item--withdraw" onClick={() => openModal('withdrawal', { amount: '', description: '' })}>
-          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></span>
-          <span>Retiro</span>
-        </button>
-        <button className="cuadre2__dock-item cuadre2__dock-item--snapshot" onClick={() => openModal('close', { counted_cash: cashReal, notes: '' })}>
-          <span className="cuadre2__dock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg></span>
-          <span>Corte</span>
-        </button>
-      </div>
-
-      {/* ═══════════════ MÉTRICAS GRID ═══════════════ */}
-      <div ref={metricsRef} className="cuadre2__metrics cuadre2__rise" style={{ '--delay': '200ms' }}>
-        <div className="cuadre2__metric cuadre2__metric--svc">
-          <div className="cuadre2__metric-head">
-            <span className="cuadre2__metric-label">Servicios</span>
-            <span className="cuadre2__metric-pill">{register.services_count || 0}</span>
-          </div>
-          <Counter value={register.services_billed || 0} className="cuadre2__metric-val" />
-          <div className="cuadre2__metric-bar"><div style={{ width: `${(register.services_billed || 0) / Math.max(totalSales, 1) * 100}%` }} /></div>
-        </div>
-        <div className="cuadre2__metric cuadre2__metric--prod">
-          <div className="cuadre2__metric-head">
-            <span className="cuadre2__metric-label">Productos</span>
-            <span className="cuadre2__metric-pill">{register.products_count || 0}</span>
-          </div>
-          <Counter value={register.products_billed || 0} className="cuadre2__metric-val" />
-          <div className="cuadre2__metric-bar"><div style={{ width: `${(register.products_billed || 0) / Math.max(totalSales, 1) * 100}%` }} /></div>
-        </div>
-        <div className="cuadre2__metric cuadre2__metric--gain">
-          <div className="cuadre2__metric-head">
-            <span className="cuadre2__metric-label">Ingresos extra</span>
-            <span className="cuadre2__metric-trend cuadre2__metric-trend--up">+</span>
-          </div>
-          <Counter value={register.deposits_total || 0} className="cuadre2__metric-val cuadre2__metric-val--pos" />
-          <small>Depositos manuales del dia</small>
-        </div>
-        <div className="cuadre2__metric cuadre2__metric--out">
-          <div className="cuadre2__metric-head">
-            <span className="cuadre2__metric-label">Salidas</span>
-            <span className="cuadre2__metric-trend cuadre2__metric-trend--down">−</span>
-          </div>
-          <Counter value={(register.expenses_total || 0) + (register.withdrawals_total || 0) + (register.payroll_total || 0)} className="cuadre2__metric-val cuadre2__metric-val--neg" />
-          <small>Gastos + retiros + nomina</small>
-        </div>
-      </div>
-
-      {/* ═══════════════ BENTO: METHODS + LEDGER ═══════════════ */}
-      <div ref={bentoRef} className="cuadre2__bento cuadre2__rise" style={{ '--delay': '300ms' }}>
-        <div className="cuadre2__panel cuadre2__panel--methods">
-          <div className="cuadre2__panel-head">
-            <span>Metodos de pago</span>
-            <span className="cuadre2__panel-tag">Hoy</span>
-          </div>
-          <div className="cuadre2__methods">
-            {methods.map(m => (
-              <div key={m.key} className="cuadre2__method">
-                <div className="cuadre2__method-head">
-                  <span className="cuadre2__method-icon" style={{ background: `${m.color}1a`, color: m.color }}>{m.icon}</span>
-                  <span className="cuadre2__method-name">{m.label}</span>
-                  <span className="cuadre2__method-val">{formatCOP(m.val)}</span>
-                </div>
-                <div className="cuadre2__method-bar">
-                  <div style={{ width: `${(m.val / totalMethodsBig) * 100}%`, background: m.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="cuadre2__panel cuadre2__panel--ledger">
-          <div className="cuadre2__panel-head">
-            <span>Efectivo en caja (acumulado)</span>
-            <span className="cuadre2__panel-tag">All time</span>
-          </div>
-          <div className="cuadre2__ledger">
-            <div className="cuadre2__ledger-row"><span>+ Base de apertura (hoy)</span><strong>{formatCOP(register.opening_amount || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>+ Ventas en efectivo</span><strong>{formatCOP(register.all_cash_sales || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>+ Otros ingresos</span><strong style={{ color: '#10B981' }}>{formatCOP(register.all_deposits || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Gastos en efectivo</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_cash_expenses || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Pagos a colaboradores</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_cash_payroll || 0)}</strong></div>
-            <div className="cuadre2__ledger-row"><span>− Retiros</span><strong style={{ color: '#DC2626' }}>{formatCOP(register.all_withdrawals || 0)}</strong></div>
-            <div className="cuadre2__ledger-total">
-              <span>= Efectivo fisico</span>
-              <Counter value={cashReal} className={cashReal < 0 ? 'cuadre2__neg' : ''} />
-            </div>
-            <div className="cuadre2__ledger-foot">
-              Periodo <strong>{range.label}</strong>: {formatCOP(register.deposits_total || 0)} ingresos · {formatCOP((register.expenses_total || 0) + (register.withdrawals_total || 0) + (register.payroll_total || 0))} salidas
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ═══════════════ POR PAGAR (comisiones del día por staff) ═══════════════ */}
-      {payrollToday.length > 0 && (
-        <div className="cuadre2__owed cuadre2__rise" style={{ '--delay': '350ms' }}>
-          <div className="cuadre2__panel-head">
-            <span>Por pagar hoy · comisiones del equipo</span>
-            <span className="cuadre2__panel-tag">{payrollToday.filter(s => (s.balance || 0) > 0).length} con saldo</span>
-          </div>
-          <div className="cuadre2__owed-grid">
-            {payrollToday
-              .slice()
-              .sort((a, b) => (b.balance || 0) - (a.balance || 0))
-              .map(s => {
-                const balance = Number(s.balance) || 0;
-                const earned = Number(s.total_earned) || 0;
-                return (
-                  <div key={s.staff_id} className={`cuadre2__owed-card ${balance > 0 ? 'cuadre2__owed-card--owed' : 'cuadre2__owed-card--ok'}`}>
-                    <div className="cuadre2__owed-top">
-                      <strong>{s.staff_name}</strong>
-                      <small>{s.staff_role || 'Staff'}</small>
-                    </div>
-                    <div className="cuadre2__owed-vals">
-                      <div>
-                        <span>Generado</span>
-                        <strong>{formatCOP(earned)}</strong>
-                      </div>
-                      <div className="cuadre2__owed-balance">
-                        <span>Por pagar</span>
-                        <strong>{formatCOP(Math.max(0, balance))}</strong>
-                      </div>
-                    </div>
-                    <div className="cuadre2__owed-meta">
-                      {s.services_count || 0} servicios · {s.unpaid_services_count || 0} sin pagar
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
 
       {/* ═══════════════ SUB-TABS PILL NAV + PANEL ═══════════════ */}
       <div ref={subsRef} className="cuadre2__nav cuadre2__rise" style={{ '--delay': '450ms' }}>
@@ -505,7 +411,20 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
       </div>
 
       <div className="cuadre2__nav-panel" key={subTab}>
-        <SubTabContent kind={subTab} data={subData[subTab]} register={register} staff={staff} addNotification={addNotification} />
+        {subTab === 'liquidacion' ? (
+          payrollToday.length > 0 ? (
+            <PayrollPanel
+              period={range}
+              staffSummaries={payrollToday}
+              onPaid={refresh}
+              addNotification={addNotification}
+            />
+          ) : (
+            <div className="gastos__empty"><p>No hay personal con saldo para liquidar en este periodo.</p></div>
+          )
+        ) : (
+          <SubTabContent kind={subTab} data={subData[subTab]} register={register} staff={staff} addNotification={addNotification} />
+        )}
       </div>
 
       {/* MODALES */}
@@ -515,6 +434,213 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
       {actionModal === 'responsible' && <ResponsibleModal form={form} setForm={setForm} staff={staff} saving={saving} onClose={closeModal} onSubmit={submitResponsible} />}
       {actionModal === 'expense' && <ExpenseQuickModal form={form} setForm={setForm} saving={saving} onClose={closeModal} onSubmit={submitExpense} />}
     </>
+  );
+};
+
+// ─── PayrollPanel: expandable staff cards with services list + Pagar action ───
+const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
+  const [expandedId, setExpandedId] = useState(null);
+  const [visitsByStaff, setVisitsByStaff] = useState({});  // {staff_id: [...visits]}
+  const [loadingVisits, setLoadingVisits] = useState(false);
+  const [payTarget, setPayTarget] = useState(null);        // staff summary being paid
+  const [payForm, setPayForm] = useState({ amount: 0, payment_method: 'efectivo', reference: '', concept: '' });
+  const [paying, setPaying] = useState(false);
+
+  const sorted = useMemo(
+    () => staffSummaries.slice().sort((a, b) => (b.balance || 0) - (a.balance || 0)),
+    [staffSummaries]
+  );
+  const owedCount = sorted.filter(s => (s.balance || 0) > 0).length;
+  const totalOwed = sorted.reduce((s, x) => s + Math.max(0, Number(x.balance) || 0), 0);
+
+  const toggleExpand = async (staffId) => {
+    if (expandedId === staffId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(staffId);
+    if (visitsByStaff[staffId]) return; // already loaded
+    setLoadingVisits(true);
+    try {
+      const r = await fetch(`${API_URL}/staff-payments/visits?staff_id=${staffId}&date_from=${period.from}&date_to=${period.to}`, { credentials: 'include' });
+      if (r.ok) {
+        const data = await r.json();
+        setVisitsByStaff(prev => ({ ...prev, [staffId]: Array.isArray(data) ? data : [] }));
+      }
+    } catch (err) {
+      addNotification('Error cargando servicios: ' + err.message, 'error');
+    } finally {
+      setLoadingVisits(false);
+    }
+  };
+
+  const openPayModal = (s) => {
+    const balance = Math.max(0, Number(s.balance) || 0);
+    setPayTarget(s);
+    setPayForm({
+      amount: balance,
+      payment_method: s.preferred_payment_method || 'efectivo',
+      reference: '',
+      concept: `Comisiones ${period.label} (${period.from} a ${period.to})`,
+    });
+  };
+
+  const submitPay = async () => {
+    if (!payTarget) return;
+    setPaying(true);
+    try {
+      const res = await fetch(`${API_URL}/staff-payments/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          staff_id: payTarget.staff_id,
+          amount: parseInt(payForm.amount || 0, 10),
+          period_from: period.from,
+          period_to: period.to,
+          concept: payForm.concept || `Comisiones ${period.label}`,
+          payment_method: payForm.payment_method,
+          reference: payForm.reference || null,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+      addNotification(`Pago a ${payTarget.staff_name} registrado`, 'success');
+      setPayTarget(null);
+      onPaid && onPaid();
+    } catch (err) {
+      addNotification('Error: ' + err.message, 'error');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  return (
+    <div className="cuadre2__owed cuadre2__rise" style={{ '--delay': '350ms' }}>
+      <div className="cuadre2__panel-head">
+        <span>Por pagar al equipo · {period.label}</span>
+        <span className="cuadre2__panel-tag">{owedCount} con saldo · Total {formatCOP(totalOwed)}</span>
+      </div>
+
+      <div className="cuadre2__owed-grid">
+        {sorted.map(s => {
+          const balance = Number(s.balance) || 0;
+          const earned = Number(s.total_earned) || 0;
+          const isExpanded = expandedId === s.staff_id;
+          const visits = visitsByStaff[s.staff_id] || [];
+          return (
+            <div key={s.staff_id} className={`cuadre2__owed-card ${balance > 0 ? 'cuadre2__owed-card--owed' : 'cuadre2__owed-card--ok'} ${isExpanded ? 'cuadre2__owed-card--expanded' : ''}`}>
+              <button className="cuadre2__owed-toggle" onClick={() => toggleExpand(s.staff_id)}>
+                <div className="cuadre2__owed-top">
+                  <strong>{s.staff_name}</strong>
+                  <small>{s.staff_role || 'Staff'}</small>
+                </div>
+                <div className="cuadre2__owed-vals">
+                  <div>
+                    <span>Generado</span>
+                    <strong>{formatCOP(earned)}</strong>
+                  </div>
+                  <div className="cuadre2__owed-balance">
+                    <span>Por pagar</span>
+                    <strong>{formatCOP(Math.max(0, balance))}</strong>
+                  </div>
+                </div>
+                <div className="cuadre2__owed-meta">
+                  {s.services_count || 0} servicios · {s.unpaid_services_count || 0} sin pagar
+                  <svg className={`cuadre2__owed-chevron ${isExpanded ? 'cuadre2__owed-chevron--up' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="cuadre2__owed-detail">
+                  {loadingVisits && !visitsByStaff[s.staff_id] ? (
+                    <SkeletonBlock width="100%" height="80px" />
+                  ) : visits.length === 0 ? (
+                    <p style={{ color: '#64748B', fontSize: 12, margin: '8px 0' }}>Sin servicios en este periodo</p>
+                  ) : (
+                    <ul className="cuadre2__owed-services">
+                      {visits.map(v => (
+                        <li key={v.id} className="cuadre2__owed-service">
+                          <div>
+                            <strong>{v.service_name}</strong>
+                            <small>{new Date(v.visit_date + 'T12:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} · {v.client_name}</small>
+                          </div>
+                          <div className="cuadre2__owed-service-amounts">
+                            <span>{formatCOP(v.amount)}</span>
+                            <small>comisión {formatCOP(v.commission)}</small>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Breakdown contable estilo Weibook */}
+                  <div className="cuadre2__owed-breakdown">
+                    <div><span>Cant. servicios</span><strong>{s.services_count || 0}</strong></div>
+                    <div><span>Total facturado</span><strong>{formatCOP(s.total_revenue || 0)}</strong></div>
+                    <div><span>Propinas</span><strong>{formatCOP(s.tips_total || 0)}</strong></div>
+                    <div><span>Multas</span><strong style={{ color: '#DC2626' }}>−{formatCOP(s.fines_total || 0)}</strong></div>
+                    <div><span>Pagado</span><strong>{formatCOP(s.total_paid || 0)}</strong></div>
+                    <div className="cuadre2__owed-breakdown-total">
+                      <span>Total a pagar</span>
+                      <strong>{formatCOP(Math.max(0, balance))}</strong>
+                    </div>
+                  </div>
+
+                  {balance > 0 && (
+                    <button className="cuadre2__owed-pay-btn" onClick={() => openPayModal(s)}>
+                      Pagar al colaborador {formatCOP(balance)}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* PAY MODAL */}
+      {payTarget && createPortal(
+        <div className="gastos__overlay" onClick={() => !paying && setPayTarget(null)}>
+          <div className="gastos__modal" onClick={e => e.stopPropagation()}>
+            <div className="gastos__modal-header">
+              <h3>Pagar a {payTarget.staff_name}</h3>
+              <button className="gastos__modal-close" onClick={() => setPayTarget(null)} disabled={paying}>&times;</button>
+            </div>
+            <div className="gastos__modal-body">
+              <label className="gastos__field">
+                <span className="gastos__field-label">Monto a pagar (COP)</span>
+                <input className="gastos__input" type="number" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} autoFocus />
+              </label>
+              <label className="gastos__field">
+                <span className="gastos__field-label">Metodo de pago</span>
+                <select className="gastos__select" value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))}>
+                  <option value="efectivo">Efectivo</option>
+                  <option value="nequi">Nequi</option>
+                  <option value="daviplata">Daviplata</option>
+                  <option value="bancolombia">Bancolombia</option>
+                  <option value="transferencia">Transferencia</option>
+                </select>
+              </label>
+              <label className="gastos__field">
+                <span className="gastos__field-label">Referencia (opcional)</span>
+                <input className="gastos__input" placeholder="Numero de transferencia, recibo..." value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} />
+              </label>
+              <label className="gastos__field">
+                <span className="gastos__field-label">Concepto</span>
+                <input className="gastos__input" value={payForm.concept} onChange={e => setPayForm(f => ({ ...f, concept: e.target.value }))} />
+              </label>
+            </div>
+            <div className="gastos__modal-footer">
+              <button className="gastos__btn gastos__btn--ghost" onClick={() => setPayTarget(null)} disabled={paying}>Cancelar</button>
+              <button className="gastos__btn gastos__btn--primary" disabled={paying || !payForm.amount} onClick={submitPay}>
+                {paying ? 'Pagando...' : `Confirmar pago ${formatCOP(parseInt(payForm.amount || 0, 10))}`}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 };
 
