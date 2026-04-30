@@ -6,7 +6,7 @@ import {
 import financeService from '../../../services/financeService';
 import aiService from '../../../services/aiService';
 import {
-  Icons, CHART_COLORS, CATEGORY_COLORS,
+  Icons, CHART_COLORS, CATEGORY_COLORS, WEEKDAY_LABELS,
   formatCOP, formatDayLabel,
   AnimatedNumber, GrowthBadge, RechartsTooltip, SkeletonBlock, PaymentDonutChart,
 } from '../financeConstants';
@@ -155,6 +155,130 @@ const InsightsPanel = ({ data }) => {
         </div>
       ))}
     </div>
+  );
+};
+
+// ─── AnalyticsExtras: comparison cards + top services + weekday chart (from old Reportes tab) ───
+const AnalyticsExtras = ({ period, dateFrom, dateTo }) => {
+  const [analytics, setAnalytics] = useState(null);
+
+  useEffect(() => {
+    const params = { period };
+    if (period === 'custom' && dateFrom && dateTo) { params.date_from = dateFrom; params.date_to = dateTo; }
+    financeService.getAnalytics(params).then(setAnalytics).catch(() => {});
+  }, [period, dateFrom, dateTo]);
+
+  const comparisonItems = useMemo(() => {
+    if (!analytics) return [];
+    return [
+      { label: 'Ingresos', current: analytics.current_revenue, previous: analytics.previous_revenue, change: analytics.revenue_change_pct, color: '#059669', bg: 'linear-gradient(135deg, rgba(5,150,105,0.08), rgba(16,185,129,0.03))' },
+      { label: 'Gastos', current: analytics.current_expenses, previous: analytics.previous_expenses, change: analytics.expenses_change_pct, color: '#DC2626', bg: 'linear-gradient(135deg, rgba(220,38,38,0.06), rgba(239,68,68,0.02))' },
+      { label: 'Ganancia Neta', current: analytics.current_profit, previous: analytics.previous_profit, change: analytics.profit_change_pct, color: '#2D5A3D', bg: 'linear-gradient(135deg, rgba(45,90,61,0.08), rgba(61,122,82,0.03))' },
+    ];
+  }, [analytics]);
+
+  const weekdayData = useMemo(() => {
+    if (!analytics) return [];
+    return (analytics.revenue_by_weekday || []).map(d => ({ ...d, label: WEEKDAY_LABELS[d.weekday] || d.weekday_name }));
+  }, [analytics]);
+
+  if (!analytics) return null;
+  const bestDay = weekdayData.length > 0 ? weekdayData.reduce((a, b) => b.revenue > a.revenue ? b : a) : null;
+
+  return (
+    <>
+      {/* Comparison vs periodo anterior */}
+      <div className="finances__comparison-grid">
+        {comparisonItems.map((item, i) => (
+          <div key={i} className="finances__comparison-card" style={{ background: item.bg, borderLeft: `3px solid ${item.color}` }}>
+            <span className="finances__comparison-label">{item.label}</span>
+            <span className="finances__comparison-current-value" style={{ color: item.color }}>{formatCOP(item.current)}</span>
+            <div className="finances__comparison-values">
+              <div className="finances__comparison-previous">
+                <span className="finances__comparison-period-label">Periodo anterior</span>
+                <span className="finances__comparison-previous-value">{formatCOP(item.previous)}</span>
+              </div>
+              <GrowthBadge value={item.change} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top servicios + ingresos por dia de semana */}
+      <div className="finances__body">
+        <div className="finances__card">
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">{Icons.scissors} Servicios mas vendidos</h2>
+            <span className="finances__card-badge">{(analytics.revenue_by_service || []).length} servicios</span>
+          </div>
+          <div className="finances__ranking-list">
+            {(analytics.revenue_by_service || []).slice(0, 8).map((svc, i) => {
+              const maxRev = (analytics.revenue_by_service?.[0]?.revenue) || 1;
+              const pct = Math.round((svc.revenue / maxRev) * 100);
+              return (
+                <div key={i} className={`finances__ranking-item ${i < 3 ? 'finances__ranking-item--top' : ''}`}>
+                  <span className={`finances__ranking-pos ${i < 3 ? 'finances__ranking-pos--highlight' : ''}`}>
+                    {i === 0 ? Icons.star : i + 1}
+                  </span>
+                  <div className="finances__ranking-info">
+                    <div className="finances__ranking-top">
+                      <div className="finances__ranking-name-wrap">
+                        <span className="finances__ranking-name">{svc.service_name}</span>
+                        {svc.category && <span className="finances__ranking-cat" style={{ color: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }}>{svc.category}</span>}
+                      </div>
+                      <div className="finances__ranking-amounts">
+                        <span className="finances__ranking-amount">{formatCOP(svc.revenue)}</span>
+                        <span className="finances__ranking-pct">{svc.pct_of_total}%</span>
+                      </div>
+                    </div>
+                    <div className="finances__ranking-bar-bg">
+                      <div className="finances__ranking-bar" style={{ width: `${pct}%`, background: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }} />
+                    </div>
+                    <span className="finances__ranking-count">{svc.count} {svc.count === 1 ? 'servicio' : 'servicios'} · Ticket: {formatCOP(svc.avg_ticket || Math.round(svc.revenue / Math.max(svc.count, 1)))}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {weekdayData.length > 0 && (
+          <div className="finances__card">
+            <div className="finances__card-header">
+              <h2 className="finances__card-title">{Icons.calendar} Ingresos por dia</h2>
+              {bestDay && <span className="finances__card-badge" style={{ color: '#059669' }}>Mejor: {bestDay.label}</span>}
+            </div>
+            <div className="finances__recharts-container">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={weekdayData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#333330' }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={45} />
+                  <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+                  <Bar dataKey="revenue" name="Ingresos" radius={[6, 6, 0, 0]} barSize={36}>
+                    {weekdayData.map((d, i) => {
+                      const maxRev = Math.max(...weekdayData.map(x => x.revenue), 1);
+                      const intensity = d.revenue / maxRev;
+                      const color = intensity > 0.8 ? '#1E3D2A' : intensity > 0.5 ? '#2D5A3D' : intensity > 0.2 ? '#3D7A52' : '#4E9466';
+                      return <Cell key={i} fill={color} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="finances__weekday-stats">
+              {weekdayData.map((d, i) => (
+                <div key={i} className="finances__weekday-stat">
+                  <span className="finances__weekday-label">{d.label}</span>
+                  <span className="finances__weekday-value">{formatCOP(d.revenue)}</span>
+                  <span className="finances__weekday-visits">{d.visits} servicios</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
@@ -390,10 +514,14 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
             </div>
           );
         })() : (
-          <div className="finances__body">
-            <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
-            <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
-          </div>
+          <>
+            <div className="finances__body">
+              <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
+              <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
+            </div>
+            {/* Merged from old Reportes tab: comparison vs prev period + top services + weekday */}
+            <AnalyticsExtras period={period} dateFrom={dateFrom} dateTo={dateTo} />
+          </>
         )
       )}
     </>

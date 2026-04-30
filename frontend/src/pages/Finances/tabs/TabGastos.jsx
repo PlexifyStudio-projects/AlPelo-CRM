@@ -1419,30 +1419,14 @@ const PnLView = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentTo 
 };
 
 // ─── Main Component ───
+// "Gastos del negocio" + "Estado de resultados" sub-tabs were removed —
+// gastos CRUD lives inside the Caja del dia > Gastos sub-tab now, and P&L
+// is covered by the top-level Reportes tab.
 const TabGastos = ({ period, dateFrom, dateTo }) => {
-  const [subView, setSubView] = useState('caja');
-
   return (
     <div className="gastos">
-      {/* Sub-tab selector */}
-      <div className="gastos__sub-tabs">
-        {SUB_TABS.map(tab => (
-          <button
-            key={tab.id}
-            className={`gastos__sub-tab ${subView === tab.id ? 'gastos__sub-tab--active' : ''}`}
-            onClick={() => setSubView(tab.id)}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
       <div className="gastos__content">
-        {subView === 'caja' && <CajaView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-        {subView === 'gastos' && <GastosView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-        {subView === 'pnl' && <PnLView period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+        <CajaView period={period} dateFrom={dateFrom} dateTo={dateTo} />
       </div>
     </div>
   );

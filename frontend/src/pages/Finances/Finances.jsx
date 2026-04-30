@@ -6,13 +6,13 @@ import {
   AUTO_REFRESH_MS, formatDateRange,
 } from './financeConstants';
 import TabResumen from './tabs/TabResumen';
-import TabReportes from './tabs/TabReportes';
 import TabGastos from './tabs/TabGastos';
 import TabComisiones from './tabs/TabComisiones';
 import TabFacturas from './tabs/TabFacturas';
 import TabLiquidacion from './tabs/TabLiquidacion';
 import TabDian from './tabs/TabDian';
 import TabForecast from './tabs/TabForecast';
+// TabReportes retired — Resumen now hosts the merged dashboard.
 
 const Finances = () => {
   const { tenant } = useTenant();
@@ -216,9 +216,8 @@ const Finances = () => {
           </button>
         ))}
       </div>
-      {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} />}
+      {(activeTab === 'resumen' || activeTab === 'reportes') && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} />}
       {activeTab === 'forecast' && <TabForecast />}
-      {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'liquidacion' && <TabLiquidacion period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
