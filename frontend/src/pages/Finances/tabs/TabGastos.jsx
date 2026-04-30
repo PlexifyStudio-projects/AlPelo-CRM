@@ -338,66 +338,86 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
           <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9h18l-1 12H4z"/><path d="M9 9V5a3 3 0 0 1 6 0v4"/></svg></span>
           <span>Retiro de dinero</span>
         </button>
-        <button className="cuadre2__act" onClick={refresh}>
-          <span className="cuadre2__act-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span>
-          <span>Opciones</span>
-        </button>
       </div>
 
-      {/* ═══════════════ RESUMEN CONTABLE (estilo Weibook, single card) ═══════════════ */}
-      <div ref={metricsRef} className="cuadre2__sheet cuadre2__rise" style={{ '--delay': '160ms' }}>
-        <div className="cuadre2__sheet-head">
-          <h3>Resumen</h3>
-          <span>{range.label}</span>
-        </div>
+      {/* ═══════════════ RESUMEN BENTO (3 columnas + total ancho) ═══════════════ */}
+      <div ref={metricsRef} className="cuadre2__bento cuadre2__rise" style={{ '--delay': '160ms' }}>
 
-        <div className="cuadre2__sheet-body">
-          <div className="cuadre2__sheet-row"><span>Responsable</span><strong>{register.opened_by || '—'}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Fecha de apertura</span><strong>{fmtDate(register.date)}</strong></div>
-
-          <div className="cuadre2__sheet-divider" />
-
-          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Transferencia bancaria</span><strong>{formatCOP(register.total_transfer || 0)}</strong></div>
-          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Efectivo</span><strong>{formatCOP(register.total_cash || 0)}</strong></div>
-
-          <div className="cuadre2__sheet-divider" />
-
-          <div className="cuadre2__sheet-row"><span>Dinero en datafono</span><strong>{formatCOP(register.total_card || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Nequi</span><strong>{formatCOP(register.total_nequi || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Daviplata</span><strong>{formatCOP(register.total_daviplata || 0)}</strong></div>
-          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Total en ventas</span><strong>{formatCOP(totalSales)}</strong></div>
-
-          <div className="cuadre2__sheet-divider" />
-
-          <div className="cuadre2__sheet-row"><span>Facturado en servicios</span><strong>{formatCOP(register.services_billed || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Facturado en productos</span><strong>{formatCOP(register.products_billed || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Cantidad en servicios</span><strong>{register.services_count || 0}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Cantidad en productos</span><strong>{register.products_count || 0}</strong></div>
-
-          <div className="cuadre2__sheet-divider" />
-
-          <div className="cuadre2__sheet-row">
-            <span>
-              Dinero base
-              <button className="cuadre2__sheet-edit" onClick={() => openModal('base', { opening_amount: register.opening_amount || 0 })} title="Editar dinero base">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-              </button>
-            </span>
-            <strong>{formatCOP(register.opening_amount || 0)}</strong>
+        {/* COL 1 — Sesion */}
+        <div className="cuadre2__cell">
+          <div className="cuadre2__cell-head">
+            <h3>Sesion</h3>
+            <span className="cuadre2__pill">{range.label}</span>
           </div>
-          <div className="cuadre2__sheet-row"><span>Otro tipo de dinero ingresado</span><strong>{formatCOP(register.deposits_total || 0)}</strong></div>
-          <div className="cuadre2__sheet-row cuadre2__sheet-row--em"><span>Total de dinero en efectivo</span><strong>{formatCOP((register.opening_amount || 0) + (register.total_cash || 0) + (register.deposits_total || 0))}</strong></div>
-
-          <div className="cuadre2__sheet-divider" />
-
-          <div className="cuadre2__sheet-row"><span>Dinero en gastos</span><strong className="cuadre2__neg">(-){formatCOP(register.expenses_total || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Dinero retirado</span><strong className="cuadre2__neg">(-){formatCOP(register.withdrawals_total || 0)}</strong></div>
-          <div className="cuadre2__sheet-row"><span>Pago de colaboradores</span><strong className="cuadre2__neg">(-){formatCOP(register.payroll_total || 0)}</strong></div>
+          <div className="cuadre2__cell-body">
+            <div className="cuadre2__line"><span>Responsable</span><strong>{register.opened_by || '—'}</strong></div>
+            <div className="cuadre2__line"><span>Fecha apertura</span><strong>{fmtDate(register.date)}</strong></div>
+            <div className="cuadre2__line">
+              <span>
+                Dinero base
+                <button className="cuadre2__edit" onClick={() => openModal('base', { opening_amount: register.opening_amount || 0 })} title="Editar dinero base">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                </button>
+              </span>
+              <strong>{formatCOP(register.opening_amount || 0)}</strong>
+            </div>
+            <div className="cuadre2__line"><span>Otros ingresos</span><strong>{formatCOP(register.deposits_total || 0)}</strong></div>
+            <div className="cuadre2__line cuadre2__line--em">
+              <span>Total efectivo disponible</span>
+              <strong>{formatCOP((register.opening_amount || 0) + (register.total_cash || 0) + (register.deposits_total || 0))}</strong>
+            </div>
+          </div>
         </div>
 
-        <div className="cuadre2__sheet-total">
-          <span>Total en caja</span>
-          <strong className={cashReal < 0 ? 'cuadre2__neg' : ''}>{formatCOP(cashReal)}</strong>
+        {/* COL 2 — Métodos de pago */}
+        <div className="cuadre2__cell">
+          <div className="cuadre2__cell-head">
+            <h3>Metodos de pago</h3>
+            <span className="cuadre2__pill cuadre2__pill--green">{formatCOP(totalSales)}</span>
+          </div>
+          <div className="cuadre2__cell-body">
+            <div className="cuadre2__line"><span>Efectivo</span><strong>{formatCOP(register.total_cash || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Datafono</span><strong>{formatCOP(register.total_card || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Nequi</span><strong>{formatCOP(register.total_nequi || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Daviplata</span><strong>{formatCOP(register.total_daviplata || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Transferencia</span><strong>{formatCOP(register.total_transfer || 0)}</strong></div>
+            <div className="cuadre2__line cuadre2__line--em"><span>Total ventas</span><strong>{formatCOP(totalSales)}</strong></div>
+          </div>
+        </div>
+
+        {/* COL 3 — Detalle de ventas */}
+        <div className="cuadre2__cell">
+          <div className="cuadre2__cell-head">
+            <h3>Ventas del periodo</h3>
+            <span className="cuadre2__pill">{register.transaction_count || 0} fact.</span>
+          </div>
+          <div className="cuadre2__cell-body">
+            <div className="cuadre2__line"><span>Facturado en servicios</span><strong>{formatCOP(register.services_billed || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Facturado en productos</span><strong>{formatCOP(register.products_billed || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Cantidad servicios</span><strong>{register.services_count || 0}</strong></div>
+            <div className="cuadre2__line"><span>Cantidad productos</span><strong>{register.products_count || 0}</strong></div>
+            <div className="cuadre2__line"><span>Propinas</span><strong>{formatCOP(register.total_tips || 0)}</strong></div>
+            <div className="cuadre2__line"><span>Descuentos</span><strong>{formatCOP(register.total_discounts || 0)}</strong></div>
+          </div>
+        </div>
+
+        {/* WIDE — Salidas + Total */}
+        <div className="cuadre2__cell cuadre2__cell--wide">
+          <div className="cuadre2__cell-head">
+            <h3>Cuadre final</h3>
+            <span className="cuadre2__pill cuadre2__pill--red">−{formatCOP(totalOut)} salidas</span>
+          </div>
+          <div className="cuadre2__cell-body cuadre2__cell-body--row">
+            <div className="cuadre2__outs">
+              <div className="cuadre2__out"><span>Dinero en gastos</span><strong className="cuadre2__neg">−{formatCOP(register.expenses_total || 0)}</strong></div>
+              <div className="cuadre2__out"><span>Dinero retirado</span><strong className="cuadre2__neg">−{formatCOP(register.withdrawals_total || 0)}</strong></div>
+              <div className="cuadre2__out"><span>Pago de colaboradores</span><strong className="cuadre2__neg">−{formatCOP(register.payroll_total || 0)}</strong></div>
+            </div>
+            <div className="cuadre2__final">
+              <span>Total en caja</span>
+              <strong className={cashReal < 0 ? 'cuadre2__neg' : ''}>{formatCOP(cashReal)}</strong>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -422,6 +442,8 @@ const CajaView = ({ period = 'today', dateFrom, dateTo }) => {
           ) : (
             <div className="gastos__empty"><p>No hay personal con saldo para liquidar en este periodo.</p></div>
           )
+        ) : subTab === 'gastos' ? (
+          <GastosView period={period} dateFrom={range.from} dateTo={range.to} />
         ) : (
           <SubTabContent kind={subTab} data={subData[subTab]} register={register} staff={staff} addNotification={addNotification} />
         )}
