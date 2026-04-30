@@ -468,6 +468,7 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
   const [payTarget, setPayTarget] = useState(null);        // staff summary being paid
   const [payForm, setPayForm] = useState({ amount: 0, payment_method: 'efectivo', reference: '', concept: '' });
   const [paying, setPaying] = useState(false);
+  const [paySuccess, setPaySuccess] = useState(false);     // shows success overlay after pay
 
   const sorted = useMemo(
     () => staffSummaries.slice().sort((a, b) => (b.balance || 0) - (a.balance || 0)),
@@ -527,9 +528,15 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Error');
+
+      // Switch to success state inside the modal — keeps it open for ~1.4s
+      setPaySuccess(true);
       addNotification(`Pago a ${payTarget.staff_name} registrado`, 'success');
-      setPayTarget(null);
       onPaid && onPaid();
+      setTimeout(() => {
+        setPayTarget(null);
+        setPaySuccess(false);
+      }, 1400);
     } catch (err) {
       addNotification('Error: ' + err.message, 'error');
     } finally {
@@ -538,10 +545,22 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
   };
 
   return (
-    <div className="cuadre2__owed cuadre2__rise" style={{ '--delay': '350ms' }}>
-      <div className="cuadre2__panel-head">
-        <span>Por pagar al equipo · {period.label}</span>
-        <span className="cuadre2__panel-tag">{owedCount} con saldo · Total {formatCOP(totalOwed)}</span>
+    <div className="cuadre2__owed">
+      <div className="cuadre2__owed-head">
+        <div>
+          <h3>Por pagar al equipo</h3>
+          <small>{period.label}</small>
+        </div>
+        <div className="cuadre2__owed-stats">
+          <div>
+            <span>Con saldo</span>
+            <strong>{owedCount}</strong>
+          </div>
+          <div>
+            <span>Total a pagar</span>
+            <strong className="cuadre2__owed-stats-amount">{formatCOP(totalOwed)}</strong>
+          </div>
+        </div>
       </div>
 
       <div className="cuadre2__owed-grid">
@@ -639,44 +658,95 @@ const PayrollPanel = ({ period, staffSummaries, onPaid, addNotification }) => {
         })}
       </div>
 
-      {/* PAY MODAL */}
+      {/* PAY MODAL — with loading + success states */}
       {payTarget && createPortal(
-        <div className="gastos__overlay" onClick={() => !paying && setPayTarget(null)}>
-          <div className="gastos__modal" onClick={e => e.stopPropagation()}>
-            <div className="gastos__modal-header">
-              <h3>Pagar a {payTarget.staff_name}</h3>
-              <button className="gastos__modal-close" onClick={() => setPayTarget(null)} disabled={paying}>&times;</button>
-            </div>
-            <div className="gastos__modal-body">
-              <label className="gastos__field">
-                <span className="gastos__field-label">Monto a pagar (COP)</span>
-                <input className="gastos__input" type="number" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} autoFocus />
-              </label>
-              <label className="gastos__field">
-                <span className="gastos__field-label">Metodo de pago</span>
-                <select className="gastos__select" value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))}>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="nequi">Nequi</option>
-                  <option value="daviplata">Daviplata</option>
-                  <option value="bancolombia">Bancolombia</option>
-                  <option value="transferencia">Transferencia</option>
-                </select>
-              </label>
-              <label className="gastos__field">
-                <span className="gastos__field-label">Referencia (opcional)</span>
-                <input className="gastos__input" placeholder="Numero de transferencia, recibo..." value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} />
-              </label>
-              <label className="gastos__field">
-                <span className="gastos__field-label">Concepto</span>
-                <input className="gastos__input" value={payForm.concept} onChange={e => setPayForm(f => ({ ...f, concept: e.target.value }))} />
-              </label>
-            </div>
-            <div className="gastos__modal-footer">
-              <button className="gastos__btn gastos__btn--ghost" onClick={() => setPayTarget(null)} disabled={paying}>Cancelar</button>
-              <button className="gastos__btn gastos__btn--primary" disabled={paying || !payForm.amount} onClick={submitPay}>
-                {paying ? 'Pagando...' : `Confirmar pago ${formatCOP(parseInt(payForm.amount || 0, 10))}`}
-              </button>
-            </div>
+        <div className="gastos__overlay" onClick={() => !paying && !paySuccess && setPayTarget(null)}>
+          <div className="paymodal" onClick={e => e.stopPropagation()}>
+            {paySuccess ? (
+              <div className="paymodal__success">
+                <div className="paymodal__check">
+                  <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="25" /><path d="M14 27 l 8 8 l 16 -16" /></svg>
+                </div>
+                <h3>Pago realizado</h3>
+                <p>{formatCOP(parseInt(payForm.amount || 0, 10))} a {payTarget.staff_name}</p>
+                <small>Quedó registrado en la nómina</small>
+              </div>
+            ) : paying ? (
+              <div className="paymodal__loading">
+                <div className="paymodal__spinner" />
+                <h3>Procesando pago…</h3>
+                <p>Registrando {formatCOP(parseInt(payForm.amount || 0, 10))} a {payTarget.staff_name}</p>
+              </div>
+            ) : (
+              <>
+                <div className="paymodal__header">
+                  <div>
+                    <small>Pagar a</small>
+                    <h3>{payTarget.staff_name}</h3>
+                  </div>
+                  <button className="paymodal__close" onClick={() => setPayTarget(null)}>×</button>
+                </div>
+
+                <div className="paymodal__body">
+                  <div className="paymodal__field">
+                    <label>Monto a pagar (COP)</label>
+                    <input
+                      type="number"
+                      value={payForm.amount}
+                      onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="paymodal__field">
+                    <label>Método de pago</label>
+                    <div className="paymodal__methods">
+                      {[
+                        { v: 'efectivo', l: 'Efectivo' },
+                        { v: 'nequi', l: 'Nequi' },
+                        { v: 'daviplata', l: 'Daviplata' },
+                        { v: 'bancolombia', l: 'Bancolombia' },
+                        { v: 'transferencia', l: 'Transferencia' },
+                      ].map(m => (
+                        <button
+                          key={m.v}
+                          type="button"
+                          className={`paymodal__method ${payForm.payment_method === m.v ? 'paymodal__method--active' : ''}`}
+                          onClick={() => setPayForm(f => ({ ...f, payment_method: m.v }))}
+                        >
+                          {m.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="paymodal__field">
+                    <label>Referencia (opcional)</label>
+                    <input
+                      placeholder="Número de transferencia, recibo…"
+                      value={payForm.reference}
+                      onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="paymodal__field">
+                    <label>Concepto</label>
+                    <input value={payForm.concept} onChange={e => setPayForm(f => ({ ...f, concept: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div className="paymodal__footer">
+                  <button className="paymodal__btn paymodal__btn--ghost" onClick={() => setPayTarget(null)}>Cancelar</button>
+                  <button
+                    className="paymodal__btn paymodal__btn--primary"
+                    disabled={!payForm.amount}
+                    onClick={submitPay}
+                  >
+                    Confirmar pago de {formatCOP(parseInt(payForm.amount || 0, 10))}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>,
         document.body
