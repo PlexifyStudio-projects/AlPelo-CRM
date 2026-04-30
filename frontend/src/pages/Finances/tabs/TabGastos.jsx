@@ -54,19 +54,25 @@ const CajaView = () => {
   const today = todayISO();
 
   const loadCore = useCallback(async () => {
+    // Independent fetches: a failure on /staff/ must not kill the cuadre.
+    let regErr = null;
     try {
-      const [regRes, stRes] = await Promise.all([
-        fetch(`${API_URL}/cash-register/today`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-        fetch(`${API_URL}/staff`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
-      ]);
-      setRegister(regRes);
-      setStaff(Array.isArray(stRes) ? stRes : (stRes?.items || []));
-    } catch (err) {
-      addNotification('Error cargando caja: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [addNotification, today]);
+      const r = await fetch(`${API_URL}/cash-register/today`, { credentials: 'include' });
+      if (r.ok) setRegister(await r.json());
+      else regErr = `HTTP ${r.status}`;
+    } catch (err) { regErr = err.message; }
+
+    try {
+      const r = await fetch(`${API_URL}/staff/`, { credentials: 'include' });
+      if (r.ok) {
+        const data = await r.json();
+        setStaff(Array.isArray(data) ? data : (data?.items || []));
+      }
+    } catch { /* staff list is optional — datalist just won't have suggestions */ }
+
+    if (regErr) addNotification('Error cargando caja: ' + regErr, 'error');
+    setLoading(false);
+  }, [addNotification]);
 
   useEffect(() => { loadCore(); }, [loadCore]);
 

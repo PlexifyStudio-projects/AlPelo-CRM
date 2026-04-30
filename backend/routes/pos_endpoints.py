@@ -867,12 +867,11 @@ def get_today_register(
     if not register:
         return {"status": "not_opened", "date": today.isoformat(), "message": "La caja no ha sido abierta hoy"}
 
-    # Recalculate live totals from checkouts
+    # Recalculate live totals from checkouts. Skip db.refresh() afterwards —
+    # the in-memory object is already up to date and refreshing would discard
+    # the Python-stashed splits (_services_count, etc.) set by the helper.
     _recalculate_register_totals(db, register, tid)
     db.commit()
-    db.refresh(register)
-    # Re-run after refresh so the cached extras (services_count etc.) survive
-    _recalculate_register_totals(db, register, tid)
     return _register_to_dict(register, db)
 
 
