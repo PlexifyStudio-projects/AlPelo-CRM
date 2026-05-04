@@ -16,6 +16,7 @@ import morgan from 'morgan';
 import { startSession, stopSession, sendMessage, getSessionStatus, listSessions } from './sessionManager.js';
 
 const PORT = parseInt(process.env.PORT || '3100', 10);
+const HOST = process.env.BIND_HOST || '0.0.0.0'; // entrypoint sets 127.0.0.1 when embedded
 const TOKEN = process.env.WA_WEB_SERVICE_TOKEN || '';
 
 const app = express();
@@ -84,6 +85,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, error: err.message });
 });
 
-app.listen(PORT, () => {
-  console.log(`[wa-web] listening on :${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`[wa-web] listening on ${HOST}:${PORT} (token=${TOKEN ? 'set' : 'dev-mode'})`);
 });

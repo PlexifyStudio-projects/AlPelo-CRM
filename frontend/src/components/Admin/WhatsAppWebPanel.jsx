@@ -256,6 +256,16 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
                 {dbStatus === 'qr' || dbStatus === 'connecting' ? 'Generando QR...' : 'Generar QR'}
               </button>
             )}
+            {(dbStatus === 'qr' || dbStatus === 'connecting') && !connected && (
+              <button
+                className={`${b}__waweb-btn ${b}__waweb-btn--ghost`}
+                onClick={() => disconnect(false)}
+                disabled={loading}
+                title="Resetear el estado si quedo atascado"
+              >
+                Cancelar
+              </button>
+            )}
             {connected && (
               <button className={`${b}__waweb-btn ${b}__waweb-btn--ghost`} onClick={() => disconnect(false)} disabled={loading}>
                 Pausar

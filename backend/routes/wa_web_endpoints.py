@@ -26,9 +26,15 @@ from routes._usage_tracker import track_message_received
 from activity_log import log_event
 
 
-WA_WEB_SERVICE_URL = os.getenv("WA_WEB_SERVICE_URL", "http://localhost:3100").rstrip("/")
+WA_WEB_SERVICE_URL = os.getenv("WA_WEB_SERVICE_URL", "http://127.0.0.1:3100").rstrip("/")
 WA_WEB_SERVICE_TOKEN = os.getenv("WA_WEB_SERVICE_TOKEN", "")
-PUBLIC_BACKEND_URL = os.getenv("PUBLIC_BACKEND_URL", "")  # e.g. https://alpelo-crm-production.up.railway.app
+# Public URL of THIS backend, used by the embedded Node service to call us back
+# via webhook. Defaults to in-container loopback because both processes live in
+# the same Railway container.
+PUBLIC_BACKEND_URL = os.getenv(
+    "PUBLIC_BACKEND_URL",
+    f"http://127.0.0.1:{os.getenv('PORT', '8000')}",
+)
 
 
 router = APIRouter(prefix="/wa-web", tags=["WhatsApp Web"])
@@ -68,12 +74,8 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
     if not tenant.wa_web_disclaimer_accepted_at:
         raise HTTPException(status_code=400, detail="Debe aceptar el disclaimer antes de activar el modo Web")
 
-    if not WA_WEB_SERVICE_URL or WA_WEB_SERVICE_URL.startswith("http://localhost"):
-        # Misconfigured backend — point this at the Railway URL of the Node service
-        raise HTTPException(
-            status_code=503,
-            detail="WA_WEB_SERVICE_URL no esta configurado en el backend. Configure la URL del microservicio Node en Railway.",
-        )
+    if not WA_WEB_SERVICE_URL:
+        raise HTTPException(status_code=503, detail="WA_WEB_SERVICE_URL no configurado en el backend")
 
     sid = _session_id(tenant)
     tenant.wa_web_session_id = sid
