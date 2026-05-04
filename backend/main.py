@@ -22,8 +22,23 @@ async def lifespan(app: FastAPI):
 
     ensure_vapid_keys()
 
+    # Embedded WhatsApp Web (Baileys) Node service.
+    # Spawned as a subprocess so it works regardless of how the container was
+    # started (Dockerfile ENTRYPOINT, Railway custom Start Command, etc.).
+    # Multi-worker safe: only one uvicorn worker holds the lock and owns Node.
+    try:
+        from services.whatsapp.embedded_node import start_embedded_node
+        start_embedded_node()
+    except Exception as e:
+        print(f"[wa-web] embedded launcher failed: {e}")
+
     print("[STARTUP] Plexify Studio API ready")
     yield
+    try:
+        from services.whatsapp.embedded_node import stop_embedded_node
+        stop_embedded_node()
+    except Exception:
+        pass
     print("[SHUTDOWN] Stopped")
 
 
