@@ -8,6 +8,9 @@ import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
 import { formatPhone } from '../../utils/formatters';
+import WebCampaignsView from '../../components/Admin/WebCampaignsView';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const B = 'campaigns';
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
@@ -184,6 +187,15 @@ const Campaigns = () => {
   const [staffList, setStaffList] = useState([]);
   const [servicesList, setServicesList] = useState([]);
   const [loading, setLoading] = useState(true);
+  // wa_mode + status: bifurcates UI between Meta (templates) and Web (free text)
+  const [waModeStatus, setWaModeStatus] = useState(null);
+  const refreshWaMode = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/wa-web/sessions/status`, { credentials: 'include' });
+      if (res.ok) setWaModeStatus(await res.json());
+    } catch {}
+  }, []);
+  useEffect(() => { refreshWaMode(); }, [refreshWaMode]);
 
   const [mainTab, setMainTab] = useState('templates');
   const [templateFilter, setTemplateFilter] = useState('all');
@@ -595,6 +607,21 @@ const Campaigns = () => {
 
   if (loading) {
     return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campañas...</span></div></div>;
+  }
+
+  // Web mode → totally different UI: free text, no templates, daily quota awareness.
+  if (waModeStatus?.wa_mode === 'web') {
+    return (
+      <div className={B}>
+        <div className={`${B}__header`}>
+          <div className={`${B}__header-left`}>
+            <h1 className={`${B}__title`}>Campañas</h1>
+            <span className={`${B}__subtitle`}>CENTRO DE MARKETING · WHATSAPP WEB (no oficial)</span>
+          </div>
+        </div>
+        <WebCampaignsView b={B} waStatus={waModeStatus} onRefreshStatus={refreshWaMode} />
+      </div>
+    );
   }
 
   return (

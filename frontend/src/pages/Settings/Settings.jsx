@@ -5,6 +5,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 import aiService from '../../services/aiService';
 import settingsService from '../../services/settingsService';
+import WhatsAppWebPanel from '../../components/Admin/WhatsAppWebPanel';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -584,6 +585,8 @@ const Settings = () => {
 
   const b = 'settings';
   const [openSection, setOpenSection] = useState(null);
+  // wa_mode synced from WhatsAppWebPanel — determines whether to show Meta config
+  const [activeWaMode, setActiveWaMode] = useState('meta');
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
 
   // Auto-open panel when navigated from Dashboard "Mi info" button
@@ -750,6 +753,8 @@ const Settings = () => {
 
           {openSection === 'meta' && (
             <div className={`${b}__panel-content`}>
+              <WhatsAppWebPanel b={b} onModeChange={setActiveWaMode} />
+              {activeWaMode === 'web' ? null : (<>
           {metaStatus?.connected && isTokenExpiringSoon && (
             <div className={`${b}__meta-expiry-warning`}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1040,6 +1045,7 @@ const Settings = () => {
               Meta API: {metaTemplates.error}
             </div>
           )}
+              </>)}
             </div>
           )}
 

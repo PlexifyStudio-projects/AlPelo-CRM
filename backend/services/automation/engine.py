@@ -108,7 +108,22 @@ def _was_already_executed(db, automation_id, client_id=None, appointment_id=None
 def _send_template_sync(phone, template_name, language_code="es", parameters=None, db=None, tenant_id=None, header_config=None):
     """Send an approved WhatsApp template message synchronously.
     header_config: optional dict with header_type, header_media_url for IMAGE/VIDEO headers.
+
+    In Meta mode, sends the official template via Cloud API.
+    In Web (Baileys) mode, templates don't exist — renders body inline as free text.
     """
+    # Web mode: short-circuit to inline text via the unified sender
+    try:
+        if db and tenant_id:
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            if tenant and (tenant.wa_mode or "meta").lower() == "web":
+                from services.whatsapp.sender import get_sender
+                sender = get_sender(db, tenant_id, sync=True)
+                result = sender.send_template(phone, template_name, language_code, parameters)
+                return result.ok
+    except Exception as _e:
+        print(f"[AUTO-ENGINE] mode-detect failed, falling back to Meta: {_e}")
+
     from routes._helpers import get_wa_token, get_wa_phone_id
 
     token = get_wa_token(db, tenant_id) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")

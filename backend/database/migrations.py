@@ -216,6 +216,21 @@ def run_migrations(engine):
         ("client", "import_batch_id", "INTEGER"),
         # Monthly revenue goal (owner-set target shown on dashboard)
         ("tenant", "monthly_revenue_goal", "INTEGER NOT NULL DEFAULT 0"),
+        # WhatsApp transport mode + Web (Baileys) session fields
+        ("tenant", "wa_mode", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
+        ("whatsapp_conversation", "transport", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
+        ("tenant", "wa_web_session_id", "VARCHAR(80)"),
+        ("tenant", "wa_web_status", "VARCHAR(20)"),
+        ("tenant", "wa_web_phone", "VARCHAR(30)"),
+        ("tenant", "wa_web_connected_at", "TIMESTAMP"),
+        ("tenant", "wa_web_last_qr_at", "TIMESTAMP"),
+        ("tenant", "wa_web_warmup_started_at", "TIMESTAMP"),
+        ("tenant", "wa_web_daily_limit", "INTEGER NOT NULL DEFAULT 20"),
+        ("tenant", "wa_web_sent_today", "INTEGER NOT NULL DEFAULT 0"),
+        ("tenant", "wa_web_sent_today_date", "DATE"),
+        ("tenant", "wa_web_pacing_min_seconds", "INTEGER NOT NULL DEFAULT 30"),
+        ("tenant", "wa_web_pacing_max_seconds", "INTEGER NOT NULL DEFAULT 90"),
+        ("tenant", "wa_web_disclaimer_accepted_at", "TIMESTAMP"),
     ]
 
     for table, column, col_type in migrations:

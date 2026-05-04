@@ -6,9 +6,11 @@ Full lifecycle: create → AI copy → segment → submit Meta → send mass Wha
 import os
 import re
 import json
+import asyncio
+import random
 import httpx
 from datetime import datetime, date, timedelta
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -1052,19 +1054,40 @@ async def check_meta_status(campaign_id: int, user=Depends(get_current_user), db
 # ============================================================================
 
 @router.post("/{campaign_id}/send")
-async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Send the campaign to all matching clients via WhatsApp template."""
+async def send_campaign(
+    campaign_id: int,
+    background_tasks: BackgroundTasks,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Schedule a campaign send. Returns immediately with status='sending'.
+
+    In Meta mode: send is fast (~1s/msg), runs synchronously to keep the response simple.
+    In Web mode: sends with random pacing (30-90s between msgs) — runs as a background task
+    so an 80-recipient campaign doesn't block the HTTP request for ~2 hours. Front polls
+    GET /campaigns/{id} to track progress (sent_count, failed_count, status).
+    """
     tid = _get_tenant(db, user)
     c = _get_campaign(db, campaign_id, tid)
 
     if not c.message_body:
         raise HTTPException(status_code=400, detail="La campaña no tiene mensaje")
 
-    wa_token = get_wa_token(db, tid)
-    wa_phone_id = get_wa_phone_id(db, tid)
+    if c.status == "sending":
+        raise HTTPException(status_code=409, detail="La campaña ya esta en envio. Espere a que termine.")
 
-    if not wa_token or not wa_phone_id:
-        raise HTTPException(status_code=400, detail="Credenciales de WhatsApp no configuradas")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    is_web_mode = bool(tenant and (tenant.wa_mode or "meta").lower() == "web")
+
+    if is_web_mode:
+        # Web (Baileys) mode — must be connected
+        if (tenant.wa_web_status or "") != "connected":
+            raise HTTPException(status_code=400, detail="WhatsApp Web no está conectado. Escanee el QR primero.")
+    else:
+        wa_token = get_wa_token(db, tid)
+        wa_phone_id = get_wa_phone_id(db, tid)
+        if not wa_token or not wa_phone_id:
+            raise HTTPException(status_code=400, detail="Credenciales de WhatsApp no configuradas")
 
     # Build audience
     audience_enriched = _build_audience(db, tid, c.segment_filters or {})
@@ -1074,7 +1097,28 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
 
     c.status = "sending"
     c.audience_count = len(audience)
+    c.sent_count = 0
+    c.failed_count = 0
+    c.updated_at = datetime.utcnow()
     db.commit()
+
+    # Web mode: run in background so we don't block on pacing delays
+    if is_web_mode:
+        audience_ids = [client.id for client in audience]
+        background_tasks.add_task(
+            _run_web_campaign_background,
+            campaign_id=c.id,
+            tenant_id=tid,
+            audience_client_ids=audience_ids,
+        )
+        return {
+            "ok": True,
+            "campaign_id": c.id,
+            "status": "sending",
+            "audience_count": len(audience),
+            "mode": "web",
+            "message": "Campaña en envio. Las pausas entre mensajes evitan bloqueo de WhatsApp.",
+        }
 
     sent = 0
     failed = 0
@@ -1107,7 +1151,9 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
             except Exception as e:
                 print(f"[CAMPAIGN] Header media upload error: {e}")
 
-    for client_obj in audience:
+    biz_name = tenant.name if tenant else ""
+
+    for idx, client_obj in enumerate(audience):
         phone = normalize_phone(client_obj.phone)
         if len(phone) < 10:
             failed += 1
@@ -1118,11 +1164,11 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
 
         try:
             if template_name and c.meta_status == "approved":
-                # Send via approved template
+                # Send via approved template (Meta mode)
                 variables = re.findall(r'\{\{(\w+)\}\}', c.message_body or "")
                 var_values = {
                     "nombre": first_name,
-                    "negocio": db.query(Tenant).filter(Tenant.id == tid).first().name if tid else "",
+                    "negocio": biz_name,
                     "servicio": client_obj.favorite_service or "tu servicio",
                     "dias": str((date.today() - max((v.visit_date for v in db.query(VisitHistory).filter(VisitHistory.client_id == client_obj.id, VisitHistory.status == "completed").all()), default=date.today())).days),
                 }
@@ -1201,3 +1247,210 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
         "total": len(audience),
         "campaign": _serialize(c),
     }
+
+
+# ============================================================================
+# Background worker — Web mode campaigns with random pacing
+# ============================================================================
+async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audience_client_ids: list):
+    """Send a Web (Baileys) campaign with realistic pacing.
+
+    Runs as a FastAPI BackgroundTask. Uses its own DB session because the
+    request-scoped one is closed when the response returns. Persists progress
+    incrementally so the front can poll for status.
+
+    Anti-ban behavior:
+      - Random delay (pacing_min..pacing_max) between each send.
+      - Stops gracefully if daily limit is reached (status='paused_quota').
+      - Stops gracefully if session disconnects mid-campaign (status='paused_disconnected').
+      - Each outbound stored in WhatsAppMessage so it appears in the inbox UI.
+    """
+    db = SessionLocal()
+    try:
+        from services.whatsapp.sender import get_sender
+        from activity_log import log_event
+
+        c = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if not c:
+            print(f"[CAMPAIGN-BG] campaign {campaign_id} not found")
+            return
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if not tenant:
+            return
+
+        biz_name = tenant.name or ""
+        try:
+            sender = get_sender(db, tenant_id)
+        except Exception as e:
+            print(f"[CAMPAIGN-BG] sender init failed: {e}")
+            c.status = "failed"
+            db.commit()
+            return
+
+        sent = 0
+        failed = 0
+        aborted_reason = None
+        total = len(audience_client_ids)
+
+        log_event(
+            "campaign",
+            f"Iniciando campana '{c.name}' a {total} contactos (Web)",
+            detail=f"Pacing: {tenant.wa_web_pacing_min_seconds}-{tenant.wa_web_pacing_max_seconds}s",
+            status="info",
+        )
+
+        for idx, client_id in enumerate(audience_client_ids):
+            # Refresh tenant view of quota each iteration (fresh sent_today after midnight, etc.)
+            db.expire(tenant)
+            client_obj = db.query(Client).filter(Client.id == client_id).first()
+            if not client_obj:
+                failed += 1
+                continue
+
+            phone = normalize_phone(client_obj.phone)
+            if len(phone) < 10:
+                failed += 1
+                continue
+
+            first_name = (client_obj.name or "").split(" ")[0]
+            resolved_body = (c.message_body or "")
+            resolved_body = resolved_body.replace("{{nombre}}", first_name)
+            resolved_body = resolved_body.replace("{{negocio}}", biz_name)
+            resolved_body = resolved_body.replace("{{servicio}}", client_obj.favorite_service or "tu servicio")
+
+            try:
+                result = await sender.send_text(phone, resolved_body)
+            except Exception as e:
+                failed += 1
+                print(f"[CAMPAIGN-BG] send error to {phone}: {e}")
+                _persist_progress(db, c.id, sent, failed)
+                continue
+
+            if result.ok:
+                sent += 1
+                # Persist the outbound message so it appears in the client's inbox conversation
+                try:
+                    _persist_outbound_for_campaign(
+                        db, tenant_id, client_obj, phone, resolved_body,
+                        wa_message_id=result.wa_message_id,
+                    )
+                except Exception as e:
+                    print(f"[CAMPAIGN-BG] persist outbound failed: {e}")
+            else:
+                failed += 1
+                print(f"[CAMPAIGN-BG] {phone} failed: {result.error}")
+                if result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED"):
+                    aborted_reason = result.error_code
+                    break
+
+            _persist_progress(db, c.id, sent, failed)
+
+            # Pacing — random delay between messages to look human
+            if idx < total - 1 and aborted_reason is None:
+                pmin = max(10, int(tenant.wa_web_pacing_min_seconds or 30))
+                pmax = max(pmin, int(tenant.wa_web_pacing_max_seconds or 90))
+                delay = random.uniform(pmin, pmax)
+                await asyncio.sleep(delay)
+
+        # Finalize
+        c = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if c:
+            c.sent_count = sent
+            c.failed_count = failed
+            if aborted_reason == "DAILY_LIMIT":
+                c.status = "paused_quota"
+                log_event("campaign", f"Campana '{c.name}' pausada — limite diario alcanzado",
+                          detail=f"Enviados: {sent}/{total}. Reanudara cuando aumente el limite o se reinicie manana.",
+                          status="warning")
+            elif aborted_reason == "NOT_CONNECTED":
+                c.status = "paused_disconnected"
+                log_event("campaign", f"Campana '{c.name}' pausada — sesion WA desconectada",
+                          detail=f"Enviados: {sent}/{total}. Reconecte y reinicie.",
+                          status="error")
+            else:
+                c.status = "sent"
+                log_event("campaign", f"Campana '{c.name}' completada",
+                          detail=f"Enviados: {sent}/{total}, fallidos: {failed}",
+                          status="ok")
+            c.updated_at = datetime.utcnow()
+            db.commit()
+
+        # Track campaign in usage metrics
+        if sent > 0:
+            try:
+                from routes._usage_tracker import track_campaign_sent
+                track_campaign_sent(count=1, tenant_id=tenant_id)
+            except Exception as e:
+                print(f"[CAMPAIGN-BG] track failed: {e}")
+    except Exception as e:
+        import traceback
+        print(f"[CAMPAIGN-BG] FATAL: {e}\n{traceback.format_exc()}")
+        try:
+            c = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+            if c:
+                c.status = "failed"
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+def _persist_progress(db, campaign_id: int, sent: int, failed: int):
+    """Update sent_count / failed_count incrementally so the front can poll progress."""
+    try:
+        c = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if c:
+            c.sent_count = sent
+            c.failed_count = failed
+            c.updated_at = datetime.utcnow()
+            db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
+def _persist_outbound_for_campaign(db, tenant_id, client, phone, content, wa_message_id):
+    """Store the outbound campaign message as WhatsAppMessage so it shows in the inbox.
+
+    Scopes by transport='web' since this only runs in Web campaigns. A Meta
+    conversation for the same client stays separate (different phone number).
+    """
+    from database.models import WhatsAppConversation, WhatsAppMessage
+
+    clean_phone = re.sub(r"\D", "", phone or "")
+
+    conv = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.tenant_id == tenant_id)
+        .filter(WhatsAppConversation.transport == "web")
+        .filter(WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone, f"+{clean_phone}"]))
+        .first()
+    )
+    if not conv:
+        conv = WhatsAppConversation(
+            tenant_id=tenant_id,
+            wa_contact_phone=phone,
+            wa_contact_name=client.name if client else None,
+            client_id=client.id if client else None,
+            is_ai_active=False,
+            unread_count=0,
+            transport="web",
+        )
+        db.add(conv)
+        db.flush()
+
+    msg = WhatsAppMessage(
+        conversation_id=conv.id,
+        wa_message_id=wa_message_id,
+        direction="outbound",
+        content=content,
+        message_type="text",
+        status="sent",
+        sent_by="campaign",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    db.commit()

@@ -179,25 +179,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("sistema", f"Intento de manipulación bloqueado", detail=f"Patrón detectado: {matched}", conv_id=conv_id, status="warning")
             # Send safe generic response instead of processing with AI
             safe_response = get_safe_response_for_injection()
-            try:
-                async with httpx.AsyncClient(timeout=15) as http:
-                    await http.post(
-                        f"{_get_wa_base_url(db)}/messages", headers=wa_headers(db),
-                        json={"messaging_product": "whatsapp", "to": normalize_phone(to_phone),
-                              "type": "text", "text": {"body": safe_response}},
-                    )
-            except Exception:
-                pass
             db = SessionLocal()
             try:
+                from services.whatsapp.sender import get_sender
+                conv_obj = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                _safe_tid = getattr(conv_obj, "tenant_id", None) if conv_obj else None
+                try:
+                    _safe_sender = get_sender(db, _safe_tid)
+                    await _safe_sender.send_text(to_phone, safe_response)
+                except Exception as _se:
+                    print(f"[Lina IA] safe-response send failed: {_se}")
                 msg = WhatsAppMessage(
                     conversation_id=conv_id, wa_message_id=None, direction="outbound",
                     content=safe_response, message_type="text", status="sent", sent_by="lina_ia",
                 )
                 db.add(msg)
-                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
-                if conv:
-                    conv.last_message_at = datetime.utcnow()
+                if conv_obj:
+                    conv_obj.last_message_at = datetime.utcnow()
                 db.commit()
             finally:
                 db.close()
@@ -1049,48 +1047,50 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             if inbound_wa_msg_id:
                 await _send_read_receipt(inbound_wa_msg_id)
 
-            # Step 4.5: Send AI response via WhatsApp (with 1 retry on failure)
+            # Step 4.5: Send AI response via the unified sender (Meta or Web)
+            from services.whatsapp.sender import get_sender
             wa_message_id = None
             send_status = "sent"
             max_retries = 2
+            _sender_tid = getattr(conv, "tenant_id", None) or _conv_tid
+            try:
+                _sender = get_sender(db, _sender_tid)
+            except Exception as _se:
+                _sender = None
+                print(f"[Lina IA] sender init failed for conv {conv_id}: {_se}")
+
             for attempt in range(max_retries):
+                if _sender is None:
+                    send_status = "failed"
+                    break
                 try:
-                    async with httpx.AsyncClient(timeout=15) as client:
-                        resp = await client.post(
-                            f"{_get_wa_base_url(db)}/messages",
-                            headers=wa_headers(db),
-                            json={
-                                "messaging_product": "whatsapp",
-                                "to": normalize_phone(to_phone),
-                                "type": "text",
-                                "text": {"body": clean_response},
-                            },
-                        )
-                        data = resp.json()
-                        if resp.status_code == 200 and "messages" in data:
-                            wa_message_id = data["messages"][0].get("id")
-                            send_status = "sent"
-                            _trigger_token_resume()  # Token works — unpause if paused
-                            break  # Success
-                        else:
-                            send_status = "failed"
-                            error_msg = data.get("error", {}).get("message", str(data)[:100])
-                            print(f"[Lina IA] WhatsApp send failed (attempt {attempt+1}) for conv {conv_id}: {error_msg}")
-                            # Detect token expiration → auto-pause
-                            if _is_token_error(error_msg):
-                                _trigger_token_pause()
-                                log_event("respuesta", "Token expirado — mensaje no enviado", detail=f"Lina se pauso automaticamente. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
-                                break  # Don't retry — token is dead
-                            if attempt < max_retries - 1:
-                                log_event("sistema", "Envio fallido, reintentando...", detail=f"Error: {error_msg}. Reintento en 5s.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
-                                await asyncio.sleep(5)
-                            else:
-                                log_event("respuesta", "No se pudo enviar el mensaje", detail=f"Fallo despues de {max_retries} intentos. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                    result = await _sender.send_text(to_phone, clean_response)
+                    if result.ok:
+                        wa_message_id = result.wa_message_id
+                        send_status = "sent"
+                        if _sender.transport == "meta":
+                            _trigger_token_resume()
+                        break
+                    send_status = "failed"
+                    error_msg = result.error or "Send failed"
+                    print(f"[Lina IA] {_sender.transport.upper()} send failed (attempt {attempt+1}) conv {conv_id}: {error_msg}")
+                    if _sender.transport == "meta" and _is_token_error(error_msg):
+                        _trigger_token_pause()
+                        log_event("respuesta", "Token expirado — mensaje no enviado", detail=f"Lina se pauso automaticamente. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                        break
+                    # Web mode: don't retry on quota / not-connected
+                    if _sender.transport == "web" and result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED"):
+                        log_event("respuesta", "WA Web: envio bloqueado", detail=error_msg, conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                        break
+                    if attempt < max_retries - 1:
+                        log_event("sistema", "Envio fallido, reintentando...", detail=f"Error: {error_msg}. Reintento en 5s.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                        await asyncio.sleep(5)
+                    else:
+                        log_event("respuesta", "No se pudo enviar el mensaje", detail=f"Fallo despues de {max_retries} intentos. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
                 except Exception as send_err:
                     send_status = "failed"
-                    print(f"[Lina IA] WhatsApp send error (attempt {attempt+1}) for conv {conv_id}: {send_err}")
+                    print(f"[Lina IA] send error (attempt {attempt+1}) conv {conv_id}: {send_err}")
                     if attempt < max_retries - 1:
-                        log_event("sistema", "Error de conexion, reintentando...", detail=str(send_err)[:100], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                         await asyncio.sleep(5)
                     else:
                         log_event("respuesta", "Error al enviar mensaje", detail=f"Fallo despues de {max_retries} intentos: {str(send_err)[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")

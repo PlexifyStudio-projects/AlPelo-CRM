@@ -1,0 +1,23 @@
+{
+  "name": "plexify-wa-web-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant WhatsApp Web (Baileys) gateway for Plexify Studio. Maintains persistent sessions, proxies sends, and forwards inbound events to the Python backend.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0",
+    "pino": "^9.5.0",
+    "qrcode": "^1.5.4"
+  }
+}

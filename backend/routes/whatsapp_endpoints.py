@@ -37,12 +37,29 @@ from services.whatsapp.helpers import (
 # ============================================================================
 @router.get("/conversations")
 def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """List all conversations with last message preview."""
+    """List conversations for the tenant's CURRENT transport (Meta or Web).
+
+    Conversations are scoped by `transport` so when the tenant switches
+    wa_mode, the inbox shows only the chats from the active phone number.
+    Old conversations remain in DB and reappear if the mode is toggled back.
+    """
     tid = safe_tid(user, db)
+    # Resolve active transport for this tenant
+    active_transport = "meta"
+    if tid is not None:
+        t = db.query(Tenant).filter(Tenant.id == tid).first()
+        if t and (t.wa_mode or "meta").lower() == "web":
+            active_transport = "web"
     try:
         q = db.query(WhatsAppConversation).options(joinedload(WhatsAppConversation.client))
         if tid is not None:
             q = q.filter(WhatsAppConversation.tenant_id == tid)
+        # Filter by transport — also include legacy NULL rows as 'meta' (safe default)
+        from sqlalchemy import or_
+        if active_transport == "meta":
+            q = q.filter(or_(WhatsAppConversation.transport == "meta", WhatsAppConversation.transport.is_(None)))
+        else:
+            q = q.filter(WhatsAppConversation.transport == "web")
         convs = (
             q.order_by(WhatsAppConversation.last_message_at.desc().nullslast())
             .all()
@@ -306,7 +323,7 @@ def list_messages(conv_id: int, db: Session = Depends(get_db), user=Depends(get_
 
 @router.post("/conversations/{conv_id}/messages")
 async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Send a WhatsApp message via Meta API and store locally."""
+    """Send a WhatsApp message via the tenant's configured transport (Meta or Web)."""
     tid = safe_tid(user, db)
     q = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id)
     if tid is not None:
@@ -319,47 +336,20 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db), 
     if not text:
         raise HTTPException(status_code=400, detail="Mensaje vacio")
 
-    # Send via Meta WhatsApp API
-    wa_message_id = None
-    status = "sent"
+    # Route through the unified sender — Meta or Web based on tenant.wa_mode
+    from services.whatsapp.sender import get_sender
+    sender = get_sender(db, tid or conv.tenant_id)
+    result = await sender.send_text(conv.wa_contact_phone, text)
 
-    try:
-        send_url = f"{_get_wa_base_url(db)}/messages"
-        send_headers = wa_headers(db)
-        send_to = normalize_phone(conv.wa_contact_phone)
-        print(f"[WA-SEND] URL={send_url}")
-        print(f"[WA-SEND] To={send_to}")
-        print(f"[WA-SEND] Auth header len={len(send_headers.get('Authorization', ''))}")
-
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(
-                send_url,
-                headers=send_headers,
-                json={
-                    "messaging_product": "whatsapp",
-                    "to": normalize_phone(conv.wa_contact_phone),
-                    "type": "text",
-                    "text": {"body": text},
-                },
-            )
-            data = resp.json()
-
-            print(f"[WA-SEND] Response status={resp.status_code}")
-            print(f"[WA-SEND] Response body={str(data)[:300]}")
-
-            if resp.status_code == 200 and "messages" in data:
-                wa_message_id = data["messages"][0].get("id")
-                status = "sent"
-                print(f"[WA-SEND] SUCCESS — msg_id={wa_message_id}")
-            else:
-                status = "failed"
-                error_msg = data.get("error", {}).get("message", str(data))
-                error_code = data.get("error", {}).get("code", "?")
-                error_subcode = data.get("error", {}).get("error_subcode", "?")
-                print(f"[WA-SEND] FAILED — code={error_code}, subcode={error_subcode}: {error_msg}")
-    except Exception as e:
-        status = "failed"
-        print(f"[WA-SEND] EXCEPTION: {type(e).__name__}: {e}")
+    wa_message_id = result.wa_message_id
+    status = "sent" if result.ok else "failed"
+    if not result.ok:
+        print(f"[WA-SEND] {sender.transport.upper()} FAILED — {result.error_code}: {result.error}")
+        # Detect Meta token expiration and auto-pause Lina
+        if sender.transport == "meta" and _is_token_error(result.error or ""):
+            _trigger_token_pause()
+    else:
+        print(f"[WA-SEND] {sender.transport.upper()} SUCCESS — msg_id={wa_message_id}")
 
     # Store in DB regardless of API result
     msg = WhatsAppMessage(

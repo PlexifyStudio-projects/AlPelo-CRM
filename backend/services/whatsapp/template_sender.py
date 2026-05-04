@@ -10,7 +10,10 @@ from routes._helpers import normalize_phone
 
 def send_template_sync(phone, template_name, language_code="es", parameters=None, db=None):
     """Send an approved WhatsApp template message synchronously.
-    Parameters is a list of strings for the template body variables."""
+    Parameters is a list of strings for the template body variables.
+
+    In Web (Baileys) mode, falls back to inline text since templates don't exist there.
+    """
     from routes._helpers import get_wa_token, get_wa_phone_id
     from database.models import Tenant
 
@@ -19,6 +22,12 @@ def send_template_sync(phone, template_name, language_code="es", parameters=None
         try:
             tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
             _tid = tenant.id if tenant else None
+            # Short-circuit to Web mode if active
+            if tenant and (tenant.wa_mode or "meta").lower() == "web":
+                from services.whatsapp.sender import get_sender
+                sender = get_sender(db, tenant.id, sync=True)
+                result = sender.send_template(phone, template_name, language_code, parameters)
+                return result.ok
         except Exception:
             pass
     token = get_wa_token(db, _tid) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")

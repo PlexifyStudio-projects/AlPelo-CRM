@@ -53,58 +53,34 @@ def _wa_headers(db=None):
     }
 
 
-def _send_whatsapp_sync(phone: str, text: str, db=None) -> bool:
-    """Send a WhatsApp message synchronously (for use in scheduler thread)."""
-    # Check token pause before attempting send
+def _send_whatsapp_sync(phone: str, text: str, db=None, tenant_id: int = None) -> bool:
+    """Send a WhatsApp message synchronously (for use in scheduler thread).
+
+    Routes through the unified sender which picks Meta or Web based on tenant.wa_mode.
+    """
+    # Check token pause before attempting send (Meta mode only — Web has its own state)
     try:
         from routes.whatsapp_endpoints import _wa_token_paused, _trigger_token_pause, _is_token_error
-        if _wa_token_paused:
-            print(f"[SCHEDULER] Token paused — skipping WA send to {phone[-4:]}")
-            return False
     except ImportError:
-        pass
+        _wa_token_paused = False
+        _trigger_token_pause = lambda: None
+        _is_token_error = lambda _x: False
 
     try:
-        _, phone_id = _get_wa_config(db)
-        wa_url = f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}/messages"
-        with httpx.Client(timeout=15) as client:
-            resp = client.post(
-                wa_url,
-                headers=_wa_headers(db),
-                json={
-                    "messaging_product": "whatsapp",
-                    "to": normalize_phone(phone),
-                    "type": "text",
-                    "text": {"body": text},
-                },
-            )
-            data = resp.json()
-            if resp.status_code == 200 and "messages" in data:
-                # Increment tenant messages_used
-                try:
-                    if db:
-                        from database.models import Tenant
-                        t = db.query(Tenant).filter(
-                            Tenant.is_active == True,
-                            Tenant.wa_access_token.isnot(None),
-                        ).first()
-                        if t:
-                            t.messages_used = (t.messages_used or 0) + 1
-                            db.commit()
-                except Exception:
-                    pass
-                return True
-            else:
-                error_msg = data.get("error", {}).get("message", str(data)[:100])
-                print(f"[SCHEDULER] WA send failed: {error_msg}")
-                # Detect token expiration → auto-pause
-                try:
-                    from routes.whatsapp_endpoints import _is_token_error, _trigger_token_pause
-                    if _is_token_error(error_msg):
-                        _trigger_token_pause()
-                except ImportError:
-                    pass
-                return False
+        from services.whatsapp.sender import get_sender
+        sender = get_sender(db, tenant_id, sync=True)
+        # If Meta is paused due to expired token, skip this send
+        if sender.transport == "meta" and _wa_token_paused:
+            print(f"[SCHEDULER] Token paused — skipping WA send to {phone[-4:]}")
+            return False
+        result = sender.send_text(phone, text)
+        if result.ok:
+            return True
+        error_msg = result.error or "Send failed"
+        print(f"[SCHEDULER] {sender.transport.upper()} send failed: {error_msg}")
+        if sender.transport == "meta" and _is_token_error(error_msg):
+            _trigger_token_pause()
+        return False
     except Exception as e:
         print(f"[SCHEDULER] WA send error: {e}")
         return False

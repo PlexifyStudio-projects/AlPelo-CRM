@@ -291,6 +291,9 @@ class WhatsAppConversation(Base):
     unread_count = Column(Integer, default=0)
     last_sentiment = Column(String, nullable=True)  # sentiment of last inbound message
     tags = Column(JSON, default=list)
+    # Transport that owns this conversation: 'meta' (Cloud API) or 'web' (Baileys).
+    # Inbox filters by tenant.wa_mode so switching modes shows the right phone's chats.
+    transport = Column(String(10), nullable=False, default="meta", server_default="meta")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -357,6 +360,22 @@ class Tenant(Base):
     wa_webhook_token = Column(String(100), nullable=True)
     wa_phone_display = Column(String(20), nullable=True)
     wa_token_expires_at = Column(DateTime, nullable=True)  # When long-lived token expires
+
+    # WhatsApp transport mode: 'meta' (Cloud API, official) or 'web' (Baileys, unofficial)
+    wa_mode = Column(String(10), nullable=False, default="meta", server_default="meta")
+    # Web (Baileys) session — populated when wa_mode='web'
+    wa_web_session_id = Column(String(80), nullable=True)  # session id in Node service (= "tenant_{id}")
+    wa_web_status = Column(String(20), nullable=True)  # disconnected | connecting | qr | connected | banned
+    wa_web_phone = Column(String(30), nullable=True)  # phone number once paired (for display)
+    wa_web_connected_at = Column(DateTime, nullable=True)
+    wa_web_last_qr_at = Column(DateTime, nullable=True)
+    wa_web_warmup_started_at = Column(DateTime, nullable=True)  # day 0 of warm-up
+    wa_web_daily_limit = Column(Integer, nullable=False, default=20, server_default="20")  # current daily cap
+    wa_web_sent_today = Column(Integer, nullable=False, default=0, server_default="0")
+    wa_web_sent_today_date = Column(Date, nullable=True)  # date for sent_today counter (resets daily)
+    wa_web_pacing_min_seconds = Column(Integer, nullable=False, default=30, server_default="30")
+    wa_web_pacing_max_seconds = Column(Integer, nullable=False, default=90, server_default="90")
+    wa_web_disclaimer_accepted_at = Column(DateTime, nullable=True)
 
     # AI config
     ai_name = Column(String(50), nullable=False, default="Lina")

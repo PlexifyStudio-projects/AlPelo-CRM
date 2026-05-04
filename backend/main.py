@@ -132,6 +132,9 @@ app.include_router(location_router, prefix="/api", tags=["Locations"])
 from routes.order_endpoints import router as order_router
 app.include_router(order_router, tags=["Orders"])
 
+from routes.wa_web_endpoints import router as wa_web_router
+app.include_router(wa_web_router, prefix="/api", tags=["WhatsApp Web"])
+
 
 # ============================================================================
 # FACTORY RESET — Dev-only endpoint to wipe all tenant data
