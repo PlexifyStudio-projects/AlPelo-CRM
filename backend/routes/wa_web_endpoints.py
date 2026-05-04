@@ -26,15 +26,23 @@ from routes._usage_tracker import track_message_received
 from activity_log import log_event
 
 
-WA_WEB_SERVICE_URL = os.getenv("WA_WEB_SERVICE_URL", "http://127.0.0.1:3100").rstrip("/")
-WA_WEB_SERVICE_TOKEN = os.getenv("WA_WEB_SERVICE_TOKEN", "")
-# Public URL of THIS backend, used by the embedded Node service to call us back
-# via webhook. Defaults to in-container loopback because both processes live in
-# the same Railway container.
-PUBLIC_BACKEND_URL = os.getenv(
-    "PUBLIC_BACKEND_URL",
-    f"http://127.0.0.1:{os.getenv('PORT', '8000')}",
-)
+# IMPORTANT: read these dynamically (not at import time). The embedded Node
+# launcher generates WA_WEB_SERVICE_TOKEN at lifespan startup, AFTER this
+# module is imported. Snapshotting at import time leaves us stuck on the
+# empty string forever and Node returns 401.
+def _wa_web_service_url() -> str:
+    return os.getenv("WA_WEB_SERVICE_URL", "http://127.0.0.1:3100").rstrip("/")
+
+
+def _wa_web_service_token() -> str:
+    return os.getenv("WA_WEB_SERVICE_TOKEN", "")
+
+
+def _public_backend_url() -> str:
+    return os.getenv(
+        "PUBLIC_BACKEND_URL",
+        f"http://127.0.0.1:{os.getenv('PORT', '8000')}",
+    )
 
 
 router = APIRouter(prefix="/wa-web", tags=["WhatsApp Web"])
@@ -42,8 +50,9 @@ router = APIRouter(prefix="/wa-web", tags=["WhatsApp Web"])
 
 def _node_headers() -> dict:
     h = {"Content-Type": "application/json"}
-    if WA_WEB_SERVICE_TOKEN:
-        h["Authorization"] = f"Bearer {WA_WEB_SERVICE_TOKEN}"
+    token = _wa_web_service_token()
+    if token:
+        h["Authorization"] = f"Bearer {token}"
     return h
 
 
@@ -52,7 +61,7 @@ def _session_id(tenant: Tenant) -> str:
 
 
 def _webhook_url() -> str:
-    base = PUBLIC_BACKEND_URL.rstrip("/")
+    base = _public_backend_url().rstrip("/")
     if not base:
         return ""
     return f"{base}/api/wa-web/webhook"
@@ -74,7 +83,8 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
     if not tenant.wa_web_disclaimer_accepted_at:
         raise HTTPException(status_code=400, detail="Debe aceptar el disclaimer antes de activar el modo Web")
 
-    if not WA_WEB_SERVICE_URL:
+    service_url = _wa_web_service_url()
+    if not service_url:
         raise HTTPException(status_code=503, detail="WA_WEB_SERVICE_URL no configurado en el backend")
 
     sid = _session_id(tenant)
@@ -99,7 +109,7 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
     try:
         async with httpx.AsyncClient(timeout=20) as c:
             resp = await c.post(
-                f"{WA_WEB_SERVICE_URL}/sessions/{sid}/start",
+                f"{service_url}/sessions/{sid}/start",
                 headers=_node_headers(),
                 json={"tenantId": tid, "webhookUrl": _webhook_url()},
             )
@@ -113,7 +123,7 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
         _reset_status("connect error")
         raise HTTPException(
             status_code=503,
-            detail="Servicio WA Web no disponible. El microservicio Node no responde en " + WA_WEB_SERVICE_URL,
+            detail="Servicio WA Web no disponible. El microservicio Node no responde en " + service_url,
         )
     except httpx.TimeoutException:
         _reset_status("timeout")
@@ -139,7 +149,7 @@ async def session_status(db: Session = Depends(get_db), user=Depends(get_current
     remote = {}
     try:
         async with httpx.AsyncClient(timeout=8) as c:
-            resp = await c.get(f"{WA_WEB_SERVICE_URL}/sessions/{sid}/status", headers=_node_headers())
+            resp = await c.get(f"{_wa_web_service_url()}/sessions/{sid}/status", headers=_node_headers())
             if resp.content:
                 remote = resp.json()
     except Exception:
@@ -181,7 +191,7 @@ async def disconnect_session(
     try:
         async with httpx.AsyncClient(timeout=15) as c:
             await c.delete(
-                f"{WA_WEB_SERVICE_URL}/sessions/{sid}",
+                f"{_wa_web_service_url()}/sessions/{sid}",
                 headers=_node_headers(),
                 params={"logout": "1"} if logout else {},
             )
@@ -241,10 +251,11 @@ async def update_web_settings(body: dict, db: Session = Depends(get_db), user=De
 # Webhook from Node service — translates Baileys events to internal format
 # ============================================================================
 def _verify_webhook_token(request: Request) -> bool:
-    if not WA_WEB_SERVICE_TOKEN:
+    token = _wa_web_service_token()
+    if not token:
         return True  # dev mode
     header = request.headers.get("x-wa-web-token") or ""
-    return header == WA_WEB_SERVICE_TOKEN
+    return header == token
 
 
 @router.post("/webhook")

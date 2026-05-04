@@ -44,8 +44,15 @@ class SendResult:
 # Config
 # ============================================================================
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
-WA_WEB_SERVICE_URL = os.getenv("WA_WEB_SERVICE_URL", "http://localhost:3100")
-WA_WEB_SERVICE_TOKEN = os.getenv("WA_WEB_SERVICE_TOKEN", "")
+# Read these dynamically (functions, not module-level snapshots) because the
+# embedded Node launcher generates WA_WEB_SERVICE_TOKEN at lifespan startup
+# AFTER this module is imported.
+def _wa_web_service_url() -> str:
+    return os.getenv("WA_WEB_SERVICE_URL", "http://127.0.0.1:3100")
+
+
+def _wa_web_service_token() -> str:
+    return os.getenv("WA_WEB_SERVICE_TOKEN", "")
 
 
 def _resolve_tenant(db, tenant_id: Optional[int]) -> Optional[Tenant]:
@@ -314,11 +321,11 @@ class WebSender(WhatsAppSender):
         return self.tenant.wa_web_session_id or f"tenant_{self.tenant.id}"
 
     def _base(self) -> str:
-        return WA_WEB_SERVICE_URL.rstrip("/")
+        return _wa_web_service_url().rstrip("/")
 
     def _headers(self) -> dict:
         return {
-            "Authorization": f"Bearer {WA_WEB_SERVICE_TOKEN}",
+            "Authorization": f"Bearer {_wa_web_service_token()}",
             "Content-Type": "application/json",
         }
 
