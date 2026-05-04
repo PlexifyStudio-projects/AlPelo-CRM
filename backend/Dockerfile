@@ -1,12 +1,17 @@
 FROM python:3.11-slim
 
-# System deps + Node.js 20 (for the embedded WhatsApp Web Baileys service)
+# System deps + Node.js 20 (for the embedded WhatsApp Web Baileys service).
 # Both processes run side-by-side in this single container so we deploy as ONE Railway service.
+# `git` is needed because some npm deps (Baileys transitively) install from git refs.
+# `build-essential` + `python3` cover any node-gyp builds.
 RUN apt-get update && apt-get install -y \
         postgresql-client \
         curl \
         ca-certificates \
         gnupg \
+        git \
+        build-essential \
+        python3 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
