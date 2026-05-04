@@ -230,7 +230,11 @@ _last_sync_time = None
 
 @router.get("")
 async def list_templates(tenant_id: int = None, status: str = None, user=Depends(get_current_user)):
-    """List all message templates. Auto-syncs with Meta every 60 seconds."""
+    """List message templates for the tenant's active transport.
+
+    In Web mode (Baileys): returns only transport='web' templates, no Meta sync.
+    In Meta mode: returns transport='meta' (and legacy NULL) templates, auto-syncs with Meta.
+    """
     global _last_sync_time
     import time as _time
 
@@ -246,6 +250,19 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
+        active_transport = "web" if (tenant.wa_mode or "meta").lower() == "web" else "meta"
+
+        # Web mode: skip Meta sync entirely, just return Web templates
+        if active_transport == "web":
+            q = db.query(MessageTemplate).filter(
+                MessageTemplate.tenant_id == tenant.id,
+                MessageTemplate.is_active == True,
+                MessageTemplate.transport == "web",
+            )
+            if status:
+                q = q.filter(MessageTemplate.status == status)
+            templates = q.order_by(MessageTemplate.category, MessageTemplate.name).all()
+            return [_serialize_template(t) for t in templates]
 
         # If no WA token configured, return empty — no templates without Meta connection
         if not tenant.wa_access_token:
@@ -286,9 +303,11 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
             except Exception as sync_err:
                 print(f"[TEMPLATE SYNC] Error: {sync_err}")
 
+        from sqlalchemy import or_
         q = db.query(MessageTemplate).filter(
             MessageTemplate.tenant_id == tenant.id,
             MessageTemplate.is_active == True,
+            or_(MessageTemplate.transport == "meta", MessageTemplate.transport.is_(None)),
         )
         if status:
             q = q.filter(MessageTemplate.status == status)
@@ -326,6 +345,21 @@ async def create_template(data: dict, user=Depends(get_current_user)):
         import re as re2
         variables = re2.findall(r'\{\{(\w+)\}\}', body)
 
+        # Tag transport based on tenant mode. Web templates auto-approve since
+        # they're free text under the dueño's responsibility (no Meta review).
+        active_transport = "web" if (tenant.wa_mode or "meta").lower() == "web" else "meta"
+        initial_status = "approved" if active_transport == "web" else "draft"
+
+        # Make slug unique within tenant + transport so Meta and Web slugs don't collide
+        existing_slug = db.query(MessageTemplate).filter(
+            MessageTemplate.tenant_id == tenant.id,
+            MessageTemplate.slug == slug,
+            MessageTemplate.transport == active_transport,
+        ).first()
+        if existing_slug:
+            from datetime import datetime as _dt
+            slug = f"{slug}_{int(_dt.utcnow().timestamp())}"
+
         tpl = MessageTemplate(
             tenant_id=tenant.id,
             name=name,
@@ -333,11 +367,12 @@ async def create_template(data: dict, user=Depends(get_current_user)):
             category=data.get("category", "general"),
             body=body,
             variables=list(set(variables)),
-            status="draft",
+            status=initial_status,
             language=data.get("language", "es"),
             header_type=data.get("header_type") or None,
             header_media_url=data.get("header_media_url") or None,
             header_text=data.get("header_text") or None,
+            transport=active_transport,
         )
         db.add(tpl)
         db.commit()

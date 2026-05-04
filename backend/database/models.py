@@ -709,6 +709,9 @@ class MessageTemplate(Base):
     header_media_url = Column(Text, nullable=True)  # base64 data URI or URL for image/video
     header_text = Column(String(200), nullable=True)  # Text header content
     is_active = Column(Boolean, default=True)
+    # Transport: 'meta' (official Cloud API, requires approval) or 'web' (Baileys,
+    # free text, no approval). Auto-set when listing/creating based on tenant.wa_mode.
+    transport = Column(String(10), nullable=False, default="meta", server_default="meta")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -979,6 +982,10 @@ class Campaign(Base):
 
     # AI
     ai_variants = Column(JSON)  # [{"body": "...", "reason": "..."}, ...]
+
+    # Transport: 'meta' (Cloud API w/ approved templates) or 'web' (Baileys free text).
+    # Inbox/Campaigns lists filter by transport=current tenant.wa_mode.
+    transport = Column(String(10), nullable=False, default="meta", server_default="meta")
 
     created_by = Column(String(100))
     created_at = Column(DateTime, default=datetime.utcnow)

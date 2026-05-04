@@ -330,8 +330,10 @@ def _audience_to_clients(audience: list[dict]) -> list[Client]:
 
 @router.post("")
 async def create_campaign(data: CampaignCreate, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Create a new campaign draft."""
+    """Create a new campaign draft. Auto-tags transport based on tenant.wa_mode."""
     tid = _get_tenant(db, user)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    active_transport = "web" if tenant and (tenant.wa_mode or "meta").lower() == "web" else "meta"
 
     campaign = Campaign(
         tenant_id=tid,
@@ -341,6 +343,8 @@ async def create_campaign(data: CampaignCreate, user=Depends(get_current_user), 
         message_body=data.message_body,
         segment_filters=data.segment_filters or {},
         created_by=data.created_by or user.username,
+        meta_template_name=getattr(data, 'meta_template_name', None),
+        transport=active_transport,
     )
     db.add(campaign)
     db.commit()
@@ -350,11 +354,22 @@ async def create_campaign(data: CampaignCreate, user=Depends(get_current_user), 
 
 @router.get("")
 async def list_campaigns(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """List all campaigns for current tenant."""
+    """List campaigns for the tenant's CURRENT transport (meta or web).
+
+    Switching wa_mode changes which campaigns show up so old Meta campaigns
+    don't pollute the Web view (and vice versa).
+    """
     tid = _get_tenant(db, user)
-    campaigns = db.query(Campaign).filter(
-        Campaign.tenant_id == tid
-    ).order_by(Campaign.created_at.desc()).all()
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    active_transport = "web" if tenant and (tenant.wa_mode or "meta").lower() == "web" else "meta"
+
+    from sqlalchemy import or_
+    q = db.query(Campaign).filter(Campaign.tenant_id == tid)
+    if active_transport == "web":
+        q = q.filter(Campaign.transport == "web")
+    else:
+        q = q.filter(or_(Campaign.transport == "meta", Campaign.transport.is_(None)))
+    campaigns = q.order_by(Campaign.created_at.desc()).all()
     return [_serialize(c) for c in campaigns]
 
 

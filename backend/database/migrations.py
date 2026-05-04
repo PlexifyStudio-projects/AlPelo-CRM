@@ -219,6 +219,8 @@ def run_migrations(engine):
         # WhatsApp transport mode + Web (Baileys) session fields
         ("tenant", "wa_mode", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
         ("whatsapp_conversation", "transport", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
+        ("message_template", "transport", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
+        ("campaign", "transport", "VARCHAR(10) NOT NULL DEFAULT 'meta'"),
         ("tenant", "wa_web_session_id", "VARCHAR(80)"),
         ("tenant", "wa_web_status", "VARCHAR(20)"),
         ("tenant", "wa_web_phone", "VARCHAR(30)"),

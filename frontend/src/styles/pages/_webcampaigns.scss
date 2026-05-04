@@ -1,0 +1,537 @@
+// ============================================================================
+// Web mode campaigns (Baileys, free-text templates) - Meta-quality UX
+// ============================================================================
+.campaigns__webcamp {
+  padding: 4px 0 32px;
+}
+
+.campaigns__webcamp-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.campaigns__webcamp-kpi {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.campaigns__webcamp-kpi-bar {
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.campaigns__webcamp-kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.campaigns__webcamp-kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0F172A;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.campaigns__webcamp-kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.campaigns__webcamp-warning {
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.campaigns__webcamp-quota {
+  background: #FAFBFC;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.campaigns__webcamp-quota-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.campaigns__webcamp-quota-bar {
+  height: 6px;
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.campaigns__webcamp-quota-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #059669);
+  transition: width 0.3s ease;
+}
+
+.campaigns__webcamp-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.campaigns__webcamp-section-title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+.campaigns__webcamp-section-sub {
+  margin: 0;
+  font-size: 13px;
+  color: #64748B;
+  max-width: 600px;
+}
+
+.campaigns__webcamp-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+
+  &--primary {
+    background: #1E3A8A;
+    color: #fff;
+    &:hover:not(:disabled) { background: #1E40AF; }
+  }
+
+  &--ghost {
+    background: #fff;
+    color: #475569;
+    border-color: rgba(15, 23, 42, 0.12);
+    &:hover:not(:disabled) { background: #F1F5F9; }
+  }
+
+  &--send {
+    background: #10B981;
+    color: #fff;
+    &:hover:not(:disabled) { background: #059669; }
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.campaigns__webcamp-icon-btn {
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  &:hover { background: #F1F5F9; color: #0F172A; }
+  &--danger:hover { background: #FEF2F2; color: #DC2626; }
+}
+
+.campaigns__webcamp-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.campaigns__webcamp-search {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+
+  svg {
+    position: absolute;
+    left: 12px;
+    color: #94A3B8;
+    pointer-events: none;
+  }
+
+  input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    font-size: 13px;
+    background: #fff;
+    &:focus { outline: none; border-color: #1E3A8A; }
+  }
+}
+
+.campaigns__webcamp-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.campaigns__webcamp-pill-btn {
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover { background: #F1F5F9; }
+
+  &--active {
+    background: #0F172A;
+    color: #fff;
+    border-color: #0F172A;
+  }
+}
+
+.campaigns__webcamp-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: #94A3B8;
+  font-size: 14px;
+  background: #FAFBFC;
+  border: 1px dashed rgba(15, 23, 42, 0.10);
+  border-radius: 12px;
+}
+
+.campaigns__webcamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.campaigns__webcamp-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: rgba(30, 58, 138, 0.20);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.campaigns__webcamp-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.campaigns__webcamp-card-cat {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.campaigns__webcamp-card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.campaigns__webcamp-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.campaigns__webcamp-card-body {
+  margin: 0;
+  font-size: 13px;
+  color: #64748B;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.campaigns__webcamp-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.campaigns__webcamp-card-meta {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.campaigns__webcamp-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.campaigns__webcamp-history {
+  margin-top: 8px;
+}
+
+.campaigns__webcamp-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.campaigns__webcamp-row {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.campaigns__webcamp-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.campaigns__webcamp-row-body {
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+.campaigns__webcamp-row-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.campaigns__webcamp-row-progress {
+  width: 80px;
+  height: 4px;
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.campaigns__webcamp-row-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1E3A8A, #3B82F6);
+  transition: width 0.3s ease;
+}
+
+.campaigns__webcamp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  padding: 16px;
+}
+
+.campaigns__webcamp-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+}
+
+.campaigns__webcamp-modal-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 { margin: 0; font-size: 16px; color: #0F172A; }
+}
+
+.campaigns__webcamp-modal-close {
+  background: transparent;
+  border: 0;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  &:hover { color: #0F172A; }
+}
+
+.campaigns__webcamp-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.campaigns__webcamp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  > span:first-child {
+    font-size: 12px;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    font-size: 13px;
+    color: #0F172A;
+    background: #fff;
+    font-family: inherit;
+    resize: vertical;
+
+    &:focus { outline: none; border-color: #1E3A8A; }
+  }
+}
+
+.campaigns__webcamp-field-hint {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.campaigns__webcamp-preview {
+  background: #F8FAFC;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campaigns__webcamp-preview-warning {
+  color: #92400E;
+  background: #FEF3C7;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.campaigns__webcamp-preview-eta {
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+.campaigns__webcamp-preview-msg {
+  background: #F8FAFC;
+  border-left: 3px solid #1E3A8A;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.campaigns__webcamp-preview-msg-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1E3A8A;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.campaigns__webcamp-preview-msg p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #0F172A;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.campaigns__webcamp-modal-footer {
+  padding: 16px 22px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
