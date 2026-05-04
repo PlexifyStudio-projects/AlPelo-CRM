@@ -68,11 +68,31 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
     if not tenant.wa_web_disclaimer_accepted_at:
         raise HTTPException(status_code=400, detail="Debe aceptar el disclaimer antes de activar el modo Web")
 
+    if not WA_WEB_SERVICE_URL or WA_WEB_SERVICE_URL.startswith("http://localhost"):
+        # Misconfigured backend — point this at the Railway URL of the Node service
+        raise HTTPException(
+            status_code=503,
+            detail="WA_WEB_SERVICE_URL no esta configurado en el backend. Configure la URL del microservicio Node en Railway.",
+        )
+
     sid = _session_id(tenant)
     tenant.wa_web_session_id = sid
     tenant.wa_web_status = "connecting"
     tenant.wa_web_last_qr_at = datetime.utcnow()
     db.commit()
+
+    def _reset_status(reason: str):
+        """Roll back wa_web_status when the Node service can't be reached, so the UI
+        doesn't get stuck on 'Generando QR...' forever."""
+        try:
+            tenant.wa_web_status = "disconnected"
+            db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+        log_event("sistema", f"WA Web: fallo al iniciar sesion ({reason})", status="error")
 
     try:
         async with httpx.AsyncClient(timeout=20) as c:
@@ -83,11 +103,24 @@ async def start_session(db: Session = Depends(get_db), user=Depends(get_current_
             )
             data = resp.json() if resp.content else {}
             if resp.status_code >= 400:
+                _reset_status(f"node {resp.status_code}")
                 raise HTTPException(status_code=502, detail=data.get("error", "Web service error"))
         log_event("sistema", f"WA Web: sesion iniciada para tenant {tid}", status="info")
         return {"ok": True, "session_id": sid, **data}
     except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Servicio WA Web no disponible")
+        _reset_status("connect error")
+        raise HTTPException(
+            status_code=503,
+            detail="Servicio WA Web no disponible. El microservicio Node no responde en " + WA_WEB_SERVICE_URL,
+        )
+    except httpx.TimeoutException:
+        _reset_status("timeout")
+        raise HTTPException(status_code=504, detail="Timeout al contactar el servicio WA Web")
+    except HTTPException:
+        raise
+    except Exception as e:
+        _reset_status(f"unexpected: {type(e).__name__}")
+        raise HTTPException(status_code=500, detail=f"Error iniciando sesion WA Web: {e}")
 
 
 @router.get("/sessions/status")
