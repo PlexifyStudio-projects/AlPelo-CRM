@@ -832,6 +832,20 @@ const Inbox = () => {
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [clientSearchResults, setClientSearchResults] = useState([]);
   const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  // wa_mode of the current tenant — 'meta' requires templates for new chats,
+  // 'web' allows free-text directly (Baileys behaves like a personal WhatsApp).
+  const [waMode, setWaMode] = useState('meta');
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/wa-web/sessions/status`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.wa_mode) setWaMode(data.wa_mode);
+        }
+      } catch {}
+    })();
+  }, []);
   const clientSearchTimer = useRef(null);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -1454,7 +1468,8 @@ const Inbox = () => {
   const handleNewChatNext = () => {
     if (!newChatPhone.trim()) return;
     setNewChatError('');
-    loadMetaTemplates();
+    // Only load Meta templates in Meta mode — Web doesn't use them
+    if (waMode !== 'web') loadMetaTemplates();
 
     const existingConv = conversations.find((c) => {
       const convPhone = (c.wa_contact_phone || '').replace(/[+\s-]/g, '');
@@ -1471,7 +1486,8 @@ const Inbox = () => {
       return;
     }
 
-    setNewChatStep('template');
+    // Web mode skips templates — sends free text directly like a personal WhatsApp.
+    setNewChatStep(waMode === 'web' ? 'custom' : 'template');
   };
 
   const handleSendTemplate = async (tpl) => {
@@ -1763,7 +1779,14 @@ const Inbox = () => {
 
             {newChatStep === 'custom' && (
               <div className={`${b}__new-chat-custom`}>
-                <p className={`${b}__new-chat-templates-hint`}>Mensaje para <strong>{newChatName || newChatPhone}</strong></p>
+                <p className={`${b}__new-chat-templates-hint`}>
+                  Mensaje para <strong>{newChatName || newChatPhone}</strong>
+                </p>
+                {waMode === 'web' && (
+                  <p className={`${b}__new-chat-meta-note`}>
+                    Modo WhatsApp Web: el mensaje se envía como texto libre desde tu número personal. Sin plantillas de Meta, sin restricciones de 24h.
+                  </p>
+                )}
                 {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
                 <textarea
                   className={`${b}__new-chat-textarea`}
@@ -1773,7 +1796,12 @@ const Inbox = () => {
                   autoFocus
                 />
                 <div className={`${b}__new-chat-footer`}>
-                  <button className={`${b}__new-chat-back`} onClick={() => setNewChatStep('template')}>← Volver</button>
+                  <button
+                    className={`${b}__new-chat-back`}
+                    onClick={() => setNewChatStep(waMode === 'web' ? 'phone' : 'template')}
+                  >
+                    ← Volver
+                  </button>
                   <button
                     className={`${b}__new-chat-submit`}
                     disabled={newChatLoading}

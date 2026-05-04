@@ -93,7 +93,10 @@ export async function startSession(sessionId, { tenantId, webhookUrl }) {
       logger,
       printQRInTerminal: false,
       browser: ['Plexify Studio', 'Chrome', '1.0'],
-      syncFullHistory: false,
+      // Pull recent history so the dueño's existing chats appear in the app.
+      // Baileys then emits 'messaging-history.set' which we forward as
+      // a 'history_sync' event to the Python webhook.
+      syncFullHistory: true,
       markOnlineOnConnect: false,
       generateHighQualityLinkPreview: false,
     });
@@ -101,6 +104,76 @@ export async function startSession(sessionId, { tenantId, webhookUrl }) {
     entry.sock = sock;
 
     sock.ev.on('creds.update', saveCreds);
+
+    // History sync — fired after pairing with the existing chats from the phone.
+    // We forward chats + recent messages so the dueño sees his current
+    // conversations immediately in the app inbox.
+    sock.ev.on('messaging-history.set', ({ chats, messages, isLatest }) => {
+      try {
+        const cutoff = Math.floor(Date.now() / 1000) - 60 * 24 * 3600; // 60 days
+        const safeChats = (chats || [])
+          .filter((c) => {
+            const remoteJid = c.id || '';
+            // skip groups, status broadcasts, newsletters
+            if (!remoteJid.endsWith('@s.whatsapp.net')) return false;
+            const ts = Number(c.conversationTimestamp || c.lastMessageRecvTimestamp || 0);
+            return !ts || ts >= cutoff;
+          })
+          .map((c) => ({
+            jid: c.id,
+            phone: (c.id || '').split('@')[0],
+            name: c.name || c.notify || null,
+            unread: c.unreadCount || 0,
+            timestamp: Number(c.conversationTimestamp || 0),
+          }));
+
+        // Per-chat last 50 messages (cap total payload)
+        const messagesByJid = new Map();
+        for (const m of messages || []) {
+          const jid = m.key?.remoteJid || '';
+          if (!jid.endsWith('@s.whatsapp.net')) continue;
+          if (!messagesByJid.has(jid)) messagesByJid.set(jid, []);
+          const arr = messagesByJid.get(jid);
+          if (arr.length < 50) {
+            const m_ = m.message || {};
+            let body = '';
+            let messageType = 'text';
+            if (m_.conversation) body = m_.conversation;
+            else if (m_.extendedTextMessage?.text) body = m_.extendedTextMessage.text;
+            else if (m_.imageMessage) { messageType = 'image'; body = m_.imageMessage.caption || ''; }
+            else if (m_.videoMessage) { messageType = 'video'; body = m_.videoMessage.caption || ''; }
+            else if (m_.audioMessage) messageType = 'audio';
+            else if (m_.documentMessage) { messageType = 'document'; body = m_.documentMessage.caption || ''; }
+            else if (m_.stickerMessage) messageType = 'sticker';
+            else messageType = 'unknown';
+            arr.push({
+              wa_message_id: m.key.id,
+              from_me: !!m.key.fromMe,
+              timestamp: Number(m.messageTimestamp || 0),
+              message_type: messageType,
+              content: body,
+            });
+          }
+        }
+
+        const safeChatsWithMsgs = safeChats.map((c) => ({
+          ...c,
+          messages: messagesByJid.get(c.jid) || [],
+        }));
+
+        if (safeChatsWithMsgs.length === 0) return;
+
+        forwardEvent(webhookUrl, {
+          type: 'history_sync',
+          sessionId,
+          tenantId,
+          isLatest: !!isLatest,
+          chats: safeChatsWithMsgs,
+        });
+      } catch (err) {
+        logger.error({ err }, 'history sync forward failed');
+      }
+    });
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;

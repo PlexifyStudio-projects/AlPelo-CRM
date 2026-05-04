@@ -319,6 +319,101 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
         return {"ok": True}
 
     # ----------------------------------------------------------------
+    # History sync — populate inbox with the existing chats from the phone
+    # ----------------------------------------------------------------
+    if event_type == "history_sync":
+        chats = payload.get("chats") or []
+        ingested = 0
+        for chat in chats:
+            try:
+                phone_raw = (chat.get("phone") or "").strip()
+                if not phone_raw:
+                    continue
+                clean_phone = re.sub(r"\D", "", phone_raw)
+                clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+
+                # Find or create conv (transport='web')
+                conv = (
+                    db.query(WhatsAppConversation)
+                    .filter(WhatsAppConversation.tenant_id == tenant_id)
+                    .filter(WhatsAppConversation.transport == "web")
+                    .filter(WhatsAppConversation.wa_contact_phone.in_([phone_raw, clean_phone, f"+{clean_phone}"]))
+                    .first()
+                )
+                if not conv:
+                    # Try to link to an existing client by last 10 digits
+                    client = next(
+                        (
+                            c for c in db.query(Client)
+                                .filter(Client.tenant_id == tenant_id, Client.is_active == True)
+                                .all()
+                            if (re.sub(r"\D", "", c.phone or "")[-10:] == clean_last10)
+                        ),
+                        None,
+                    )
+                    conv = WhatsAppConversation(
+                        tenant_id=tenant_id,
+                        wa_contact_phone=phone_raw,
+                        wa_contact_name=chat.get("name"),
+                        client_id=client.id if client else None,
+                        is_ai_active=False,  # imported chats: don't auto-reply with Lina
+                        unread_count=int(chat.get("unread") or 0),
+                        transport="web",
+                    )
+                    db.add(conv)
+                    db.flush()
+
+                # Ingest messages — dedupe by wa_message_id
+                msgs = chat.get("messages") or []
+                latest_ts = 0
+                for m in msgs:
+                    wa_msg_id = m.get("wa_message_id")
+                    if not wa_msg_id:
+                        continue
+                    exists = db.query(WhatsAppMessage).filter(WhatsAppMessage.wa_message_id == wa_msg_id).first()
+                    if exists:
+                        continue
+                    ts = int(m.get("timestamp") or 0)
+                    if ts > latest_ts:
+                        latest_ts = ts
+                    direction = "outbound" if m.get("from_me") else "inbound"
+                    msg_type = m.get("message_type") or "text"
+                    db.add(WhatsAppMessage(
+                        conversation_id=conv.id,
+                        wa_message_id=wa_msg_id,
+                        direction=direction,
+                        content=m.get("content") or "",
+                        message_type=msg_type,
+                        status="delivered" if direction == "inbound" else "sent",
+                        sent_by="historic" if direction == "outbound" else None,
+                        created_at=datetime.utcfromtimestamp(ts) if ts else datetime.utcnow(),
+                    ))
+                if latest_ts:
+                    conv.last_message_at = datetime.utcfromtimestamp(latest_ts)
+                ingested += 1
+            except Exception as e:
+                print(f"[wa-web history_sync] chat error: {e}")
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"[wa-web history_sync] commit failed: {e}")
+
+        if ingested:
+            log_event(
+                "sistema",
+                f"WA Web: importados {ingested} chats del historial",
+                detail=f"isLatest={payload.get('isLatest')}",
+                status="info",
+            )
+        return {"ok": True, "ingested": ingested}
+
+    # ----------------------------------------------------------------
     # Inbound message — funnel into the same Conversation/Message tables
     # ----------------------------------------------------------------
     if event_type == "message":

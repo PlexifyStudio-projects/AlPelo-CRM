@@ -532,31 +532,49 @@ async def send_template(body: dict, db: Session = Depends(get_db), user=Depends(
 # ============================================================================
 @router.post("/conversations")
 def create_conversation(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Create a new conversation (or return existing one for the same phone)."""
+    """Create a new conversation (or return existing one for the same phone).
+
+    The conversation is tagged with the current tenant's transport ('meta' or 'web')
+    so it shows up in the right inbox when the dueño switches modes.
+    """
     phone = body.get("phone", "").strip()
     name = body.get("name", "").strip()
 
     if not phone:
         raise HTTPException(status_code=400, detail="Numero de telefono requerido")
 
-    # Check if conversation already exists
-    existing = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone == phone
-    ).first()
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    transport = "web" if tenant and (tenant.wa_mode or "meta").lower() == "web" else "meta"
 
+    # Existing conversation must match BOTH phone and transport — Meta and Web
+    # convs for the same phone are intentionally separate (different numbers).
+    q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone == phone)
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    if transport == "web":
+        q = q.filter(WhatsAppConversation.transport == "web")
+    else:
+        from sqlalchemy import or_
+        q = q.filter(or_(WhatsAppConversation.transport == "meta", WhatsAppConversation.transport.is_(None)))
+    existing = q.first()
     if existing:
         return {"id": existing.id, "existing": True}
 
-    # Try to match with a client by phone
-    client = db.query(Client).filter(Client.phone == phone).first()
+    # Try to match with a client by phone (tenant-scoped)
+    cq = db.query(Client).filter(Client.phone == phone)
+    if tid is not None:
+        cq = cq.filter(Client.tenant_id == tid)
+    client = cq.first()
 
     conv = WhatsAppConversation(
-        tenant_id=getattr(client, 'tenant_id', None) if client else None,
+        tenant_id=tid or (getattr(client, 'tenant_id', None) if client else None),
         wa_contact_phone=phone,
         wa_contact_name=name or (client.name if client else None),
         client_id=client.id if client else None,
         is_ai_active=True,
         unread_count=0,
+        transport=transport,
     )
     db.add(conv)
     db.commit()
