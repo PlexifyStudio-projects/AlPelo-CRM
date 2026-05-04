@@ -1,0 +1,12 @@
+# Railway config for the WhatsApp Web (Baileys) microservice.
+# Tells Railway how to build/run this folder when deployed as its own service.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node src/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
