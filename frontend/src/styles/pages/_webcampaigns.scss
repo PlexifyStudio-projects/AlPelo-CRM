@@ -535,3 +535,71 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+.campaigns__webcamp-modal--wide {
+  max-width: 720px;
+}
+
+.campaigns__webcamp-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campaigns__webcamp-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.campaigns__webcamp-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.campaigns__webcamp-filter-pill {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover { background: #F1F5F9; }
+
+  &--active {
+    background: #1E3A8A;
+    color: #fff;
+    border-color: #1E3A8A;
+  }
+}
+
+.campaigns__webcamp-filter-empty {
+  font-size: 12px;
+  color: #94A3B8;
+  padding: 4px 0;
+}
+
+.campaigns__webcamp-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+
+  input {
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    font-size: 13px;
+    color: #0F172A;
+    background: #fff;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+
+    &:focus { outline: none; border-color: #1E3A8A; }
+  }
+}

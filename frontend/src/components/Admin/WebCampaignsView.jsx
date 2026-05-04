@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import templateService from '../../services/templateService';
 import campaignService from '../../services/campaignService';
+import staffService from '../../services/staffService';
+import servicesService from '../../services/servicesService';
 import { useNotification } from '../../context/NotificationContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
@@ -64,11 +66,36 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
 
   // ---- send campaign modal ----
   const [sendingFor, setSendingFor] = useState(null);
-  const [filterDays, setFilterDays] = useState(0);
+  // Same filter shape as Meta wizard
+  const [filters, setFilters] = useState({
+    staff_ids: [],
+    service_names: [],
+    last_visit_days: 0,
+    min_spent: '',
+    max_spent: '',
+    date_from: '',
+    date_to: '',
+  });
+  const [staffList, setStaffList] = useState([]);
+  const [servicesList, setServicesList] = useState([]);
   const [audiencePreview, setAudiencePreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [campaignName, setCampaignName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Load staff + services once for the filter dropdowns
+  useEffect(() => {
+    (async () => {
+      try {
+        const [s, sv] = await Promise.all([
+          staffService.list({}).catch(() => []),
+          servicesService.list({}).catch(() => []),
+        ]);
+        setStaffList(Array.isArray(s) ? s : []);
+        setServicesList(Array.isArray(sv) ? sv : []);
+      } catch {}
+    })();
+  }, []);
 
   // ---- quota ----
   const dailyLimit = waStatus?.daily_limit || 20;
@@ -171,20 +198,41 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
   const openSend = (tpl) => {
     setSendingFor(tpl);
     setCampaignName(`${tpl.name} — ${new Date().toLocaleDateString('es-CO')}`);
-    setFilterDays(0);
+    setFilters({
+      staff_ids: [],
+      service_names: [],
+      last_visit_days: 0,
+      min_spent: '',
+      max_spent: '',
+      date_from: '',
+      date_to: '',
+    });
     setAudiencePreview(null);
   };
 
-  const refreshPreview = async (days) => {
+  // Build the segment_filters payload from the local filter state — strips empty values
+  const buildSegmentFilters = (f) => {
+    const p = {};
+    if (f.staff_ids && f.staff_ids.length) p.staff_ids = f.staff_ids;
+    if (f.service_names && f.service_names.length) p.service_names = f.service_names;
+    if (f.last_visit_days) p.last_visit_days = parseInt(f.last_visit_days, 10);
+    if (f.min_spent !== '' && f.min_spent !== null) p.min_spent = parseInt(f.min_spent, 10);
+    if (f.max_spent !== '' && f.max_spent !== null) p.max_spent = parseInt(f.max_spent, 10);
+    if (f.date_from) p.date_from = f.date_from;
+    if (f.date_to) p.date_to = f.date_to;
+    return p;
+  };
+
+  const refreshPreview = async () => {
     if (!sendingFor) return;
     setPreviewLoading(true);
     try {
-      const filters = days > 0 ? { last_visit_days: days } : {};
+      const segment_filters = buildSegmentFilters(filters);
       const res = await fetch(`${API_URL}/campaigns/audience/preview`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ segment_filters: filters }),
+        body: JSON.stringify({ segment_filters }),
       });
       if (res.ok) setAudiencePreview(await res.json());
     } finally {
@@ -192,9 +240,27 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
     }
   };
 
+  // Debounce preview when filters change
   useEffect(() => {
-    if (sendingFor) refreshPreview(filterDays);
-  }, [filterDays, sendingFor]);
+    if (!sendingFor) return;
+    const t = setTimeout(refreshPreview, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sendingFor]);
+
+  // Toggle helpers for multi-check pills
+  const toggleStaff = (id) => {
+    setFilters(f => ({
+      ...f,
+      staff_ids: f.staff_ids.includes(id) ? f.staff_ids.filter(x => x !== id) : [...f.staff_ids, id],
+    }));
+  };
+  const toggleService = (name) => {
+    setFilters(f => ({
+      ...f,
+      service_names: f.service_names.includes(name) ? f.service_names.filter(x => x !== name) : [...f.service_names, name],
+    }));
+  };
 
   const launchSend = async () => {
     if (!sendingFor) return;
@@ -205,13 +271,13 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
     }
     setSubmitting(true);
     try {
-      const filters = filterDays > 0 ? { last_visit_days: filterDays } : {};
+      const segment_filters = buildSegmentFilters(filters);
       const camp = await campaignService.create({
         name: campaignName.trim() || sendingFor.name,
         campaign_type: 'web_free_text',
         message_body: sendingFor.body,
         meta_template_name: sendingFor.slug,
-        segment_filters: filters,
+        segment_filters,
       });
       const res = await fetch(`${API_URL}/campaigns/${camp.id}/send`, {
         method: 'POST',
@@ -419,10 +485,10 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
         </div>
       )}
 
-      {/* Send modal */}
+      {/* Send modal — same filter set as Meta wizard */}
       {sendingFor && (
         <div className={`${b}__webcamp-modal-backdrop`} onClick={() => !submitting && setSendingFor(null)}>
-          <div className={`${b}__webcamp-modal`} onClick={e => e.stopPropagation()}>
+          <div className={`${b}__webcamp-modal ${b}__webcamp-modal--wide`} onClick={e => e.stopPropagation()}>
             <div className={`${b}__webcamp-modal-header`}>
               <h3>Enviar — {sendingFor.name}</h3>
               <button className={`${b}__webcamp-modal-close`} onClick={() => setSendingFor(null)}>{SVG.close}</button>
@@ -432,20 +498,110 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
                 <span className={`${b}__webcamp-preview-msg-label`}>Mensaje a enviar</span>
                 <p>{sendingFor.body}</p>
               </div>
+
               <label className={`${b}__webcamp-field`}>
                 <span>Nombre de la campaña</span>
                 <input type="text" value={campaignName} onChange={e => setCampaignName(e.target.value)} />
               </label>
-              <label className={`${b}__webcamp-field`}>
-                <span>Audiencia</span>
-                <select value={filterDays} onChange={e => setFilterDays(parseInt(e.target.value, 10))}>
-                  <option value={0}>Todos los clientes</option>
-                  <option value={7}>Sin visita hace 7+ días</option>
-                  <option value={30}>Sin visita hace 30+ días</option>
-                  <option value={60}>Sin visita hace 60+ días</option>
-                  <option value={90}>Sin visita hace 90+ días</option>
-                </select>
-              </label>
+
+              {/* ===== Filtro Profesional ===== */}
+              <div className={`${b}__webcamp-filter-group`}>
+                <span className={`${b}__webcamp-filter-label`}>Profesional</span>
+                <div className={`${b}__webcamp-filter-pills`}>
+                  {staffList.length === 0 ? (
+                    <span className={`${b}__webcamp-filter-empty`}>Sin profesionales registrados</span>
+                  ) : staffList.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${b}__webcamp-filter-pill ${filters.staff_ids.includes(s.id) ? `${b}__webcamp-filter-pill--active` : ''}`}
+                      onClick={() => toggleStaff(s.id)}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ===== Filtro Servicio ===== */}
+              <div className={`${b}__webcamp-filter-group`}>
+                <span className={`${b}__webcamp-filter-label`}>Servicio utilizado</span>
+                <div className={`${b}__webcamp-filter-pills`}>
+                  {servicesList.length === 0 ? (
+                    <span className={`${b}__webcamp-filter-empty`}>Sin servicios registrados</span>
+                  ) : servicesList.map(sv => (
+                    <button
+                      key={sv.id}
+                      type="button"
+                      className={`${b}__webcamp-filter-pill ${filters.service_names.includes(sv.name) ? `${b}__webcamp-filter-pill--active` : ''}`}
+                      onClick={() => toggleService(sv.name)}
+                    >
+                      {sv.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ===== Filtro Inactividad ===== */}
+              <div className={`${b}__webcamp-filter-group`}>
+                <span className={`${b}__webcamp-filter-label`}>Inactividad</span>
+                <div className={`${b}__webcamp-filter-pills`}>
+                  {[
+                    { v: 0,  label: 'Sin filtro' },
+                    { v: 7,  label: '+7 días' },
+                    { v: 30, label: '+30 días' },
+                    { v: 60, label: '+60 días' },
+                    { v: 90, label: '+90 días' },
+                  ].map(opt => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      className={`${b}__webcamp-filter-pill ${filters.last_visit_days === opt.v ? `${b}__webcamp-filter-pill--active` : ''}`}
+                      onClick={() => setFilters(f => ({ ...f, last_visit_days: opt.v }))}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ===== Filtro Gasto ===== */}
+              <div className={`${b}__webcamp-filter-group`}>
+                <span className={`${b}__webcamp-filter-label`}>Gasto histórico (COP)</span>
+                <div className={`${b}__webcamp-filter-row`}>
+                  <input
+                    type="number"
+                    placeholder="Mínimo"
+                    value={filters.min_spent}
+                    onChange={e => setFilters(f => ({ ...f, min_spent: e.target.value }))}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Máximo"
+                    value={filters.max_spent}
+                    onChange={e => setFilters(f => ({ ...f, max_spent: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* ===== Filtro Fechas ===== */}
+              <div className={`${b}__webcamp-filter-group`}>
+                <span className={`${b}__webcamp-filter-label`}>Periodo de visita</span>
+                <div className={`${b}__webcamp-filter-row`}>
+                  <input
+                    type="date"
+                    value={filters.date_from}
+                    onChange={e => setFilters(f => ({ ...f, date_from: e.target.value }))}
+                  />
+                  <input
+                    type="date"
+                    value={filters.date_to}
+                    onChange={e => setFilters(f => ({ ...f, date_to: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* ===== Audience preview ===== */}
               <div className={`${b}__webcamp-preview`}>
                 {previewLoading ? (
                   <span>Calculando audiencia...</span>
@@ -459,7 +615,7 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
                     )}
                     {(audiencePreview.count || 0) > 0 && (
                       <div className={`${b}__webcamp-preview-eta`}>
-                        Tiempo estimado: ~{Math.ceil((Math.min(audiencePreview.count || 0, remainingToday) * 60) / 60)} min para los de hoy con pacing 30–90s
+                        Tiempo estimado: ~{Math.ceil(Math.min(audiencePreview.count || 0, remainingToday))} min para los de hoy con pacing 30–90s
                       </div>
                     )}
                   </>
