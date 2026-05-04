@@ -1354,7 +1354,8 @@ async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audienc
             else:
                 failed += 1
                 print(f"[CAMPAIGN-BG] {phone} failed: {result.error}")
-                if result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED"):
+                # Pausable conditions: stop the loop and resume later
+                if result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED", "RULE_BLOCKED"):
                     aborted_reason = result.error_code
                     break
 
@@ -1382,6 +1383,11 @@ async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audienc
                 log_event("campaign", f"Campana '{c.name}' pausada — sesion WA desconectada",
                           detail=f"Enviados: {sent}/{total}. Reconecte y reinicie.",
                           status="error")
+            elif aborted_reason == "RULE_BLOCKED":
+                c.status = "paused_quota"
+                log_event("campaign", f"Campana '{c.name}' pausada — regla anti-bloqueo activa",
+                          detail=f"Enviados: {sent}/{total}. La proteccion bloqueo el envio para no banear el numero.",
+                          status="warning")
             else:
                 c.status = "sent"
                 log_event("campaign", f"Campana '{c.name}' completada",

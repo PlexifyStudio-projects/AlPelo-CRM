@@ -420,13 +420,25 @@ class WebSender(WhatsAppSender):
         quota = self._check_quota()
         if quota:
             return quota
+
+        # Anti-ban guard rails: business hours, recipient cooldown, circuit breaker
+        from services.whatsapp.anti_ban import evaluate_send, vary_message, record_send_outcome
+        block = evaluate_send(self.db, self.tenant.id, phone)
+        if block:
+            return SendResult(ok=False, error=block, error_code="RULE_BLOCKED", transport="web")
+
+        # Add invisible jitter so identical templates don't hash-match across recipients
+        text_to_send = vary_message(text)
+
         data, err = await self._post(f"/sessions/{self._session_id()}/send", {
             "to": normalize_phone(phone),
             "type": "text",
-            "text": text,
+            "text": text_to_send,
         })
         if err:
+            record_send_outcome(self.tenant.id, success=False)
             return SendResult(ok=False, error=err, transport="web")
+        record_send_outcome(self.tenant.id, success=True)
         self._bump_sent()
         return SendResult(ok=True, wa_message_id=data.get("messageId"), transport="web")
 
