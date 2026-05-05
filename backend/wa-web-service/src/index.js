@@ -13,7 +13,7 @@
  */
 import express from 'express';
 import morgan from 'morgan';
-import { startSession, stopSession, sendMessage, getSessionStatus, listSessions, lookupContacts } from './sessionManager.js';
+import { startSession, stopSession, sendMessage, getSessionStatus, listSessions, lookupContacts, resumeSavedSessions } from './sessionManager.js';
 
 const PORT = parseInt(process.env.PORT || '3100', 10);
 const HOST = process.env.BIND_HOST || '0.0.0.0'; // entrypoint sets 127.0.0.1 when embedded
@@ -109,4 +109,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, HOST, () => {
   console.log(`[wa-web] listening on ${HOST}:${PORT} (token=${TOKEN ? 'set' : 'dev-mode'})`);
+  // Resume any sessions that were paired before this container restarted.
+  // Without this, every Railway redeploy leaves the dueño disconnected
+  // until they manually re-scan the QR.
+  resumeSavedSessions().catch((e) => console.error('[wa-web] resumeSavedSessions failed:', e.message));
 });

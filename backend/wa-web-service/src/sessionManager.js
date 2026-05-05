@@ -36,6 +36,28 @@ function sessionAuthDir(sessionId) {
   return path.join(SESSIONS_DIR, sessionId);
 }
 
+function sessionMetaPath(sessionId) {
+  return path.join(SESSIONS_DIR, sessionId, '_plexify_meta.json');
+}
+
+async function readMetadata(sessionId) {
+  try {
+    const txt = await fs.readFile(sessionMetaPath(sessionId), 'utf-8');
+    return JSON.parse(txt);
+  } catch {
+    return null;
+  }
+}
+
+async function writeMetadata(sessionId, meta) {
+  try {
+    await fs.mkdir(sessionAuthDir(sessionId), { recursive: true });
+    await fs.writeFile(sessionMetaPath(sessionId), JSON.stringify(meta, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[wa-web] writeMetadata failed:', e.message);
+  }
+}
+
 function getOrCreate(sessionId) {
   if (!sessions.has(sessionId)) {
     sessions.set(sessionId, {
@@ -80,6 +102,10 @@ export async function startSession(sessionId, { tenantId, webhookUrl }) {
   entry.lastError = null;
   entry.tenantId = tenantId;
   entry.webhookUrl = webhookUrl;
+
+  // Persist metadata so the Node service can auto-resume after a Railway
+  // redeploy without the dueño re-scanning the QR.
+  await writeMetadata(sessionId, { tenantId, webhookUrl, savedAt: Date.now() });
 
   try {
     const authDir = sessionAuthDir(sessionId);
@@ -405,6 +431,46 @@ export async function listSessions() {
     phone: s.phone,
     connectedAt: s.connectedAt,
   }));
+}
+
+
+/**
+ * Scan SESSIONS_DIR at startup, find folders with both Baileys creds and our
+ * Plexify metadata, and resume each session. Lets the dueño survive container
+ * redeploys without re-scanning the QR.
+ */
+export async function resumeSavedSessions() {
+  await ensureSessionsDir();
+  let entries;
+  try {
+    entries = await fs.readdir(SESSIONS_DIR, { withFileTypes: true });
+  } catch (e) {
+    console.error('[wa-web] could not read sessions dir:', e.message);
+    return;
+  }
+  const folders = entries.filter((d) => d.isDirectory()).map((d) => d.name);
+  for (const sessionId of folders) {
+    try {
+      const credsPath = path.join(SESSIONS_DIR, sessionId, 'creds.json');
+      try {
+        await fs.access(credsPath);
+      } catch {
+        continue; // no creds — skip
+      }
+      const meta = await readMetadata(sessionId);
+      if (!meta || !meta.tenantId) {
+        console.warn(`[wa-web] session ${sessionId} has creds but no metadata — skipping resume`);
+        continue;
+      }
+      console.log(`[wa-web] resuming session ${sessionId} (tenant ${meta.tenantId})`);
+      // fire-and-forget; sock connection.update events will update state
+      startSession(sessionId, { tenantId: meta.tenantId, webhookUrl: meta.webhookUrl }).catch((e) =>
+        console.error(`[wa-web] resume ${sessionId} failed:`, e.message),
+      );
+    } catch (e) {
+      console.error(`[wa-web] resume error for ${sessionId}:`, e.message);
+    }
+  }
 }
 
 
