@@ -134,7 +134,7 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
 
   const saveTpl = async () => {
     if (!tplForm.name.trim() || !tplForm.body.trim()) {
-      notify({ type: 'error', message: 'Nombre y mensaje son requeridos' });
+      notify('Nombre y mensaje son requeridos', 'error');
       return;
     }
     setTplSaving(true);
@@ -146,9 +146,9 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
       }
       setShowNewTpl(false);
       await fetchAll();
-      notify({ type: 'success', message: editingTpl ? 'Plantilla actualizada' : 'Plantilla creada' });
+      notify(editingTpl ? 'Plantilla actualizada' : 'Plantilla creada', 'success');
     } catch (e) {
-      notify({ type: 'error', message: e.message || 'No se pudo guardar' });
+      notify(e.message || 'No se pudo guardar', 'error');
     } finally {
       setTplSaving(false);
     }
@@ -160,7 +160,7 @@ export default function WebCampaignsView({ b, waStatus, onRefreshStatus }) {
       await templateService.deleteTemplate(tpl.id);
       await fetchAll();
     } catch (e) {
-      notify({ type: 'error', message: e.message });
+      notify(e.message, 'error');
     }
   };
 

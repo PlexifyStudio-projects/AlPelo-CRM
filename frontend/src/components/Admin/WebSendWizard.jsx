@@ -191,7 +191,7 @@ export default function WebSendWizard({ b, template, waStatus, onCancel, onSent 
       setSelectedIds(new Set(contacts.map(c => c.id)));
       setStep(3);
     } catch (e) {
-      notify({ type: 'error', message: e.message });
+      notify(e.message, 'error');
     } finally {
       setContactsLoading(false);
     }
@@ -233,11 +233,11 @@ export default function WebSendWizard({ b, template, waStatus, onCancel, onSent 
   // ---- Step 4: launch ----
   const launch = async () => {
     if (!connected) {
-      notify({ type: 'error', message: 'WhatsApp Web no conectado' });
+      notify('WhatsApp Web no conectado', 'error');
       return;
     }
     if (selectedIds.size === 0) {
-      notify({ type: 'error', message: 'Selecciona al menos un contacto' });
+      notify('Selecciona al menos un contacto', 'error');
       return;
     }
     setSubmitting(true);
@@ -267,15 +267,15 @@ export default function WebSendWizard({ b, template, waStatus, onCancel, onSent 
         throw new Error(err.detail || 'No se pudo iniciar la campaña');
       }
       const overflow = selectedIds.size - remainingToday;
-      notify({
-        type: 'success',
-        message: overflow > 0
+      notify(
+        overflow > 0
           ? `Iniciada: ${remainingToday} hoy + ${overflow} pausada hasta mañana`
           : `Iniciada a ${selectedIds.size} contactos`,
-      });
+        'success',
+      );
       onSent?.();
     } catch (e) {
-      notify({ type: 'error', message: e.message });
+      notify(e.message, 'error');
     } finally {
       setSubmitting(false);
     }
