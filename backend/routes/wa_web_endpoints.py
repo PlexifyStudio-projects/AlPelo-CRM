@@ -200,11 +200,92 @@ async def disconnect_session(
 
     tenant.wa_web_status = "disconnected"
     if logout:
+        # Before nulling the phone, tag every Web conv that doesn't have an
+        # owner phone yet with the disconnecting one. That way the inbox
+        # filter correctly hides them when the dueño pairs a different number,
+        # and brings them back if he re-pairs the same number.
+        old_phone = (tenant.wa_web_phone or "").strip()
+        if old_phone:
+            try:
+                from sqlalchemy import update
+                db.execute(
+                    update(WhatsAppConversation)
+                    .where(WhatsAppConversation.tenant_id == tid)
+                    .where(WhatsAppConversation.transport == "web")
+                    .where(WhatsAppConversation.linked_owner_phone.is_(None))
+                    .values(linked_owner_phone=old_phone)
+                )
+            except Exception as e:
+                print(f"[wa-web] tag legacy convs failed: {e}")
         tenant.wa_web_phone = None
         tenant.wa_web_connected_at = None
     db.commit()
     log_event("sistema", f"WA Web: sesion {'cerrada' if logout else 'pausada'} (tenant {tid})", status="info")
     return {"ok": True}
+
+
+@router.post("/purge-chats")
+async def purge_chats(
+    body: dict = None,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Delete ALL Web conversations + their messages for this tenant.
+
+    Hard delete — irrecoverable. Use the 'scope' field to target only the
+    currently-paired number ('current') or wipe everything ever ('all').
+    Useful when the dueño is starting fresh on a new number and doesn't
+    want any of the old chats hanging around in the DB.
+    """
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant context")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    scope = ((body or {}).get("scope") or "all").strip().lower()
+
+    q = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.tenant_id == tid)
+        .filter(WhatsAppConversation.transport == "web")
+    )
+    if scope == "current":
+        current = (tenant.wa_web_phone or "").strip()
+        if not current:
+            raise HTTPException(status_code=400, detail="No hay numero conectado actualmente")
+        q = q.filter(WhatsAppConversation.linked_owner_phone == current)
+
+    convs = q.all()
+    conv_ids = [c.id for c in convs]
+    if not conv_ids:
+        return {"ok": True, "deleted_convs": 0, "deleted_messages": 0}
+
+    deleted_msgs = 0
+    try:
+        # Delete messages first (no cascade configured at the model level)
+        deleted_msgs = (
+            db.query(WhatsAppMessage)
+            .filter(WhatsAppMessage.conversation_id.in_(conv_ids))
+            .delete(synchronize_session=False)
+        )
+        # Then convs themselves
+        db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.id.in_(conv_ids)
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al borrar: {e}")
+
+    log_event(
+        "sistema",
+        f"WA Web: purga de {len(conv_ids)} chats ({deleted_msgs} mensajes)",
+        detail=f"scope={scope}",
+        status="warning",
+    )
+    return {"ok": True, "deleted_convs": len(conv_ids), "deleted_messages": deleted_msgs}
 
 
 @router.post("/enrich-contacts")
@@ -458,6 +539,7 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
                         is_ai_active=False,  # imported chats: don't auto-reply with Lina
                         unread_count=int(chat.get("unread") or 0),
                         transport="web",
+                        linked_owner_phone=tenant.wa_web_phone,
                     )
                     db.add(conv)
                     db.flush()
@@ -560,6 +642,7 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
                 is_ai_active=True,
                 unread_count=0,
                 transport="web",
+                linked_owner_phone=tenant.wa_web_phone,
             )
             db.add(conv)
             db.flush()

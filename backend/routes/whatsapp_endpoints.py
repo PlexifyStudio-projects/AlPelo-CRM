@@ -42,14 +42,20 @@ def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_u
     Conversations are scoped by `transport` so when the tenant switches
     wa_mode, the inbox shows only the chats from the active phone number.
     Old conversations remain in DB and reappear if the mode is toggled back.
+
+    Web mode also filters by `linked_owner_phone` so when the dueño re-pairs
+    with a different number, the chats from the previous number stay hidden
+    until he pairs that original number again.
     """
     tid = safe_tid(user, db)
     # Resolve active transport for this tenant
     active_transport = "meta"
+    current_owner_phone = None
     if tid is not None:
         t = db.query(Tenant).filter(Tenant.id == tid).first()
         if t and (t.wa_mode or "meta").lower() == "web":
             active_transport = "web"
+            current_owner_phone = (t.wa_web_phone or "").strip() or None
     try:
         q = db.query(WhatsAppConversation).options(joinedload(WhatsAppConversation.client))
         if tid is not None:
@@ -60,6 +66,13 @@ def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_u
             q = q.filter(or_(WhatsAppConversation.transport == "meta", WhatsAppConversation.transport.is_(None)))
         else:
             q = q.filter(WhatsAppConversation.transport == "web")
+            # Owner-phone isolation: when a phone is paired, only show its
+            # chats. Legacy NULL rows are visible only while no phone is set.
+            if current_owner_phone:
+                q = q.filter(or_(
+                    WhatsAppConversation.linked_owner_phone == current_owner_phone,
+                    WhatsAppConversation.linked_owner_phone.is_(None),
+                ))
         convs = (
             q.order_by(WhatsAppConversation.last_message_at.desc().nullslast())
             .all()

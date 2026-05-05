@@ -184,6 +184,32 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
     }
   };
 
+  const purgeChats = async (scope = 'all') => {
+    const msg = scope === 'current'
+      ? '¿Borrar TODOS los chats Web del numero conectado actualmente? No se puede deshacer.'
+      : '¿Borrar TODOS los chats Web del tenant (de todos los numeros que se hayan conectado)? No se puede deshacer.';
+    if (!window.confirm(msg)) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/wa-web/purge-chats`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || 'No se pudo borrar');
+      }
+      setError(`Borrados: ${data.deleted_convs} chats / ${data.deleted_messages} mensajes. Recarga el inbox.`);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isWebMode = status?.wa_mode === 'web';
   const dbStatus = status?.db_status || 'disconnected';
   const remote = status?.remote || {};
@@ -298,6 +324,16 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
                 title="Refresca nombres + fotos desde el WhatsApp del telefono"
               >
                 Sincronizar contactos
+              </button>
+            )}
+            {connected && (
+              <button
+                className={`${b}__waweb-btn ${b}__waweb-btn--danger`}
+                onClick={() => purgeChats('all')}
+                disabled={loading}
+                title="Elimina TODOS los chats Web (de todos los numeros) del tenant"
+              >
+                Borrar todos los chats
               </button>
             )}
             {connected && (

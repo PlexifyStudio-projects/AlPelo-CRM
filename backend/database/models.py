@@ -294,6 +294,11 @@ class WhatsAppConversation(Base):
     # Transport that owns this conversation: 'meta' (Cloud API) or 'web' (Baileys).
     # Inbox filters by tenant.wa_mode so switching modes shows the right phone's chats.
     transport = Column(String(10), nullable=False, default="meta", server_default="meta")
+    # Owner's WA Web phone at conv creation time. When the dueño pairs a
+    # different number, old convs stay in DB but the inbox hides them
+    # (filtered by current tenant.wa_web_phone). Re-pairing the original
+    # number brings them back. NULL = legacy or Meta convs.
+    linked_owner_phone = Column(String(30), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
