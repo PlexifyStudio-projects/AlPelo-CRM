@@ -319,6 +319,45 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
         return {"ok": True}
 
     # ----------------------------------------------------------------
+    # Contact update — name + profile picture pulled per-jid by the Node
+    # service after the initial history sync. Updates the conversation row
+    # so the inbox shows real names and avatars instead of raw phone digits.
+    # ----------------------------------------------------------------
+    if event_type == "contact_update":
+        phone_raw = (payload.get("phone") or "").strip()
+        new_name = (payload.get("name") or "").strip()
+        new_photo = (payload.get("profile_pic_url") or "").strip()
+        if not phone_raw:
+            return {"ok": False, "error": "missing phone"}
+
+        clean_phone = re.sub(r"\D", "", phone_raw)
+        last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+
+        # Find ALL web convs for this tenant whose phone matches (last 10 digits)
+        all_convs = (
+            db.query(WhatsAppConversation)
+            .filter(WhatsAppConversation.tenant_id == tenant_id)
+            .filter(WhatsAppConversation.transport == "web")
+            .all()
+        )
+        targets = [c for c in all_convs if re.sub(r"\D", "", c.wa_contact_phone or "")[-10:] == last10]
+
+        for conv in targets:
+            # Only overwrite name if it's empty or a raw phone number (no real name yet)
+            existing_name = (conv.wa_contact_name or "").strip()
+            existing_is_numeric = existing_name.replace("+", "").replace(" ", "").isdigit()
+            if new_name and (not existing_name or existing_is_numeric):
+                conv.wa_contact_name = new_name
+            # Photo: replace if missing
+            if new_photo and not (conv.wa_profile_photo_url or "").strip():
+                conv.wa_profile_photo_url = new_photo
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        return {"ok": True, "matched": len(targets)}
+
+    # ----------------------------------------------------------------
     # History sync — populate inbox with the existing chats from the phone
     # ----------------------------------------------------------------
     if event_type == "history_sync":
@@ -500,7 +539,11 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
 
         conv.last_message_at = datetime.utcnow()
         conv.unread_count = (conv.unread_count or 0) + 1
-        if contact_name and not conv.wa_contact_name:
+        # Update contact name if missing or just a phone number — pushName from
+        # the new message is usually a real display name.
+        existing_name = (conv.wa_contact_name or "").strip()
+        existing_is_numeric = existing_name.replace("+", "").replace(" ", "").isdigit()
+        if contact_name and (not existing_name or existing_is_numeric):
             conv.wa_contact_name = contact_name
 
         # Inbox notification

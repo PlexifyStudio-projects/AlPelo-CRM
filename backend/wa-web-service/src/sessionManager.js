@@ -170,6 +170,13 @@ export async function startSession(sessionId, { tenantId, webhookUrl }) {
           isLatest: !!isLatest,
           chats: safeChatsWithMsgs,
         });
+
+        // Background: enrich each chat with profile picture + display name.
+        // WhatsApp doesn't include those in messaging-history.set so we have to
+        // call them per-jid. Throttle to ~5 req/sec to avoid rate-limits.
+        enrichContacts(sock, safeChats, sessionId, tenantId, webhookUrl).catch((e) =>
+          logger.warn({ err: e }, 'contact enrichment failed'),
+        );
       } catch (err) {
         logger.error({ err }, 'history sync forward failed');
       }
@@ -398,4 +405,60 @@ export async function listSessions() {
     phone: s.phone,
     connectedAt: s.connectedAt,
   }));
+}
+
+
+/**
+ * Fetch profile picture + display name per chat and forward as 'contact_update'
+ * events to the Python webhook. WhatsApp doesn't include those in the initial
+ * messaging-history.set, so we have to ask per-jid.
+ *
+ * Throttled (200ms between calls) so WhatsApp doesn't rate-limit. Top 100
+ * most recent chats only — older ones get enriched lazily on first incoming
+ * message instead.
+ */
+async function enrichContacts(sock, chats, sessionId, tenantId, webhookUrl) {
+  // Most-recent-first
+  const ordered = [...chats]
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    .slice(0, 100);
+
+  for (const chat of ordered) {
+    const jid = chat.jid;
+    if (!jid) continue;
+
+    let photoUrl = null;
+    let displayName = chat.name || null;
+
+    // Profile picture (high quality). May 404 if the contact has none.
+    try {
+      photoUrl = await sock.profilePictureUrl(jid, 'image').catch(() => null);
+    } catch {
+      photoUrl = null;
+    }
+
+    // Display name lookup — onWhatsApp returns the registered handle
+    if (!displayName) {
+      try {
+        const lookup = await sock.onWhatsApp(jid.split('@')[0]).catch(() => null);
+        if (Array.isArray(lookup) && lookup[0]) {
+          displayName = lookup[0].notify || lookup[0].verifiedName || null;
+        }
+      } catch {}
+    }
+
+    if (photoUrl || displayName) {
+      forwardEvent(webhookUrl, {
+        type: 'contact_update',
+        sessionId,
+        tenantId,
+        phone: chat.phone,
+        name: displayName || null,
+        profile_pic_url: photoUrl || null,
+      });
+    }
+
+    // Throttle: ~5 lookups/sec
+    await new Promise((r) => setTimeout(r, 200));
+  }
 }
