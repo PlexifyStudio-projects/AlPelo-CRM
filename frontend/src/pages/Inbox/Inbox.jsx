@@ -846,6 +846,36 @@ const Inbox = () => {
       } catch {}
     })();
   }, []);
+
+  // Web mode only: hard-delete every Web conversation + its messages.
+  // One-click purge for the dueño when changing numbers or starting fresh.
+  const [purging, setPurging] = useState(false);
+  const purgeWebChats = async () => {
+    if (!window.confirm('¿Borrar TODOS los chats de WhatsApp Web? No se puede deshacer.')) return;
+    setPurging(true);
+    try {
+      const res = await fetch(`${API_BASE}/wa-web/purge-chats`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'all' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.detail || 'No se pudo borrar');
+      } else {
+        alert(`Borrados: ${data.deleted_convs} chats / ${data.deleted_messages} mensajes`);
+        setSelectedConvId(null);
+        setMessages([]);
+        try { await loadConversations(); } catch {}
+      }
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setPurging(false);
+    }
+  };
+
   const clientSearchTimer = useRef(null);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -1595,6 +1625,17 @@ const Inbox = () => {
             <button className={`${b}__blast-trigger ${showBlast ? `${b}__blast-trigger--active` : ''}`} onClick={() => setShowBlast(!showBlast)} title="Envio masivo">
               {Icons.megaphone}
             </button>
+            {waMode === 'web' && (
+              <button
+                className={`${b}__new-chat-btn`}
+                onClick={purgeWebChats}
+                disabled={purging}
+                title="Borrar TODOS los chats de WhatsApp Web"
+                style={{ color: '#DC2626' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            )}
             {totalUnread > 0 && <span className={`${b}__unread-total`}>{totalUnread}</span>}
           </div>
         </div>
