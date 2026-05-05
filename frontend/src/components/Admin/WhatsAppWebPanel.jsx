@@ -160,6 +160,30 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
     }
   };
 
+  const enrichContacts = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/wa-web/enrich-contacts`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || 'No se pudo iniciar el sync de contactos');
+      }
+      if (data.queued === 0) {
+        setError(data.message || 'Todos los contactos ya tienen nombre + foto');
+      } else {
+        setError(`Sincronizando ${data.queued} contactos en segundo plano (~${data.estimated_seconds}s). Recarga el inbox en un minuto.`);
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isWebMode = status?.wa_mode === 'web';
   const dbStatus = status?.db_status || 'disconnected';
   const remote = status?.remote || {};
@@ -264,6 +288,16 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
                 title="Resetear el estado si quedo atascado"
               >
                 Cancelar
+              </button>
+            )}
+            {connected && (
+              <button
+                className={`${b}__waweb-btn ${b}__waweb-btn--ghost`}
+                onClick={enrichContacts}
+                disabled={loading}
+                title="Refresca nombres + fotos desde el WhatsApp del telefono"
+              >
+                Sincronizar contactos
               </button>
             )}
             {connected && (

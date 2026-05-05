@@ -207,6 +207,66 @@ async def disconnect_session(
     return {"ok": True}
 
 
+@router.post("/enrich-contacts")
+async def enrich_contacts(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Manually re-pull names + profile photos from WhatsApp for all Web
+    conversations that still show as raw phone numbers.
+
+    Useful right after pairing if the auto-enrichment didn't catch all chats,
+    or later when the dueño wants to refresh his contact list.
+    """
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant context")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    if (tenant.wa_web_status or "") != "connected":
+        raise HTTPException(status_code=400, detail="WhatsApp Web no esta conectado")
+
+    # All Web conversations missing a real name OR a profile photo
+    convs = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.tenant_id == tid)
+        .filter(WhatsAppConversation.transport == "web")
+        .all()
+    )
+    phones = []
+    for c in convs:
+        existing_name = (c.wa_contact_name or "").strip()
+        existing_is_numeric = existing_name.replace("+", "").replace(" ", "").isdigit()
+        needs_name = not existing_name or existing_is_numeric
+        needs_photo = not (c.wa_profile_photo_url or "").strip()
+        if needs_name or needs_photo:
+            phones.append(c.wa_contact_phone)
+
+    if not phones:
+        return {"ok": True, "queued": 0, "message": "Todos los contactos ya tienen nombre + foto"}
+
+    sid = _session_id(tenant)
+    service_url = _wa_web_service_url()
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(
+                f"{service_url}/sessions/{sid}/lookup-contacts",
+                headers=_node_headers(),
+                json={"phones": phones, "webhookUrl": _webhook_url()},
+            )
+            data = resp.json() if resp.content else {}
+            if resp.status_code >= 400:
+                raise HTTPException(status_code=502, detail=data.get("error", "Web service error"))
+        log_event(
+            "sistema",
+            f"WA Web: encolando enriquecimiento de {len(phones)} contactos",
+            detail="Nombres y fotos se actualizaran progresivamente (~5/seg).",
+            status="info",
+        )
+        return {"ok": True, "queued": len(phones), "estimated_seconds": int(len(phones) * 0.25)}
+    except httpx.ConnectError:
+        raise HTTPException(status_code=503, detail="Servicio WA Web no disponible")
+
+
 @router.put("/settings")
 async def update_web_settings(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Update WA Web tenant settings: mode toggle, pacing, daily limit, disclaimer accept."""

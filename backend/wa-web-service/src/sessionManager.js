@@ -409,6 +409,32 @@ export async function listSessions() {
 
 
 /**
+ * Public helper for on-demand enrichment of an arbitrary phone list. Used by
+ * the Python /enrich-contacts endpoint when the dueño hits the "Sincronizar
+ * contactos" button in Settings — gives a way to re-pull names/photos
+ * without rescanning the QR.
+ */
+export async function lookupContacts(sessionId, phones, webhookUrl) {
+  const entry = sessions.get(sessionId);
+  if (!entry || entry.state !== 'connected' || !entry.sock) {
+    const err = new Error(`Session ${sessionId} not connected`);
+    err.code = 'NOT_CONNECTED';
+    throw err;
+  }
+  const sock = entry.sock;
+  const tenantId = entry.tenantId;
+  const fakeChats = (phones || []).map((p) => ({
+    jid: `${p.replace(/\D/g, '')}@s.whatsapp.net`,
+    phone: p.replace(/\D/g, ''),
+    name: null,
+  }));
+  // Reuse the same per-jid loop
+  await enrichContacts(sock, fakeChats, sessionId, tenantId, webhookUrl || entry.webhookUrl);
+  return { processed: fakeChats.length };
+}
+
+
+/**
  * Fetch profile picture + display name per chat and forward as 'contact_update'
  * events to the Python webhook. WhatsApp doesn't include those in the initial
  * messaging-history.set, so we have to ask per-jid.

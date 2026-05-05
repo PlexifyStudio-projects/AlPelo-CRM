@@ -13,7 +13,7 @@
  */
 import express from 'express';
 import morgan from 'morgan';
-import { startSession, stopSession, sendMessage, getSessionStatus, listSessions } from './sessionManager.js';
+import { startSession, stopSession, sendMessage, getSessionStatus, listSessions, lookupContacts } from './sessionManager.js';
 
 const PORT = parseInt(process.env.PORT || '3100', 10);
 const HOST = process.env.BIND_HOST || '0.0.0.0'; // entrypoint sets 127.0.0.1 when embedded
@@ -63,6 +63,28 @@ app.post('/sessions/:sessionId/send', async (req, res) => {
   try {
     const result = await sendMessage(sessionId, req.body || {});
     res.json({ ok: true, ...result });
+  } catch (err) {
+    const status = err.code === 'NOT_CONNECTED' ? 409 : 500;
+    res.status(status).json({ ok: false, error: err.message, code: err.code });
+  }
+});
+
+// On-demand contact enrichment — Python calls this with a list of phones
+// when the dueño hits "Sincronizar contactos". Each phone gets looked up via
+// profilePictureUrl + onWhatsApp and a 'contact_update' event is forwarded
+// back to the configured webhookUrl.
+app.post('/sessions/:sessionId/lookup-contacts', async (req, res) => {
+  const { sessionId } = req.params;
+  const { phones, webhookUrl } = req.body || {};
+  if (!Array.isArray(phones) || phones.length === 0) {
+    return res.status(400).json({ ok: false, error: 'phones[] required' });
+  }
+  try {
+    // Fire-and-forget — enrichment is throttled and slow (~5/sec).
+    lookupContacts(sessionId, phones, webhookUrl).catch((e) =>
+      console.error('[wa-web] lookupContacts error:', e.message),
+    );
+    res.json({ ok: true, queued: phones.length });
   } catch (err) {
     const status = err.code === 'NOT_CONNECTED' ? 409 : 500;
     res.status(status).json({ ok: false, error: err.message, code: err.code });
