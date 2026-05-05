@@ -118,8 +118,25 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
     created_to = filters.get("created_to")
     no_show_count = filters.get("no_show_count")  # min no-shows
     rfm_segment = filters.get("rfm_segment")  # RFM segment: vip, leal, potencial, etc.
+    phone_list = filters.get("phone_list")  # explicit phone list (Web wizard step 4 sends specific selected contacts)
 
-    clients = q.all()
+    # If an explicit phone list is provided, narrow the query to those phones first.
+    # Used by the Web send wizard when the dueño hand-picks contacts in step 3.
+    if phone_list:
+        import re as _re_pl
+        last10s = set()
+        for p in phone_list:
+            digits = _re_pl.sub(r"\D", "", p or "")
+            if len(digits) >= 7:
+                last10s.add(digits[-10:])
+        if last10s:
+            # Load all candidates and filter in Python by last 10 digits
+            all_candidates = q.all()
+            clients = [c for c in all_candidates if _re_pl.sub(r"\D", "", c.phone or "")[-10:] in last10s]
+        else:
+            clients = []
+    else:
+        clients = q.all()
 
     # ── Pre-compute visit stats for all clients in one pass ──
     all_client_ids = [c.id for c in clients]
