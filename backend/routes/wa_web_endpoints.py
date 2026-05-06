@@ -293,6 +293,57 @@ async def purge_chats(
     return {"ok": True, "deleted_convs": len(conv_ids), "deleted_messages": deleted_msgs}
 
 
+@router.post("/cleanup-invalid-conversations")
+async def cleanup_invalid_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Delete conversations whose wa_contact_phone isn't a plausible phone number.
+
+    Targets the trash created by malformed Baileys JIDs (channels, broadcasts,
+    linked devices) that produced 14+ digit "phones" like 281015549427797.
+    Hard delete — these are not real contacts.
+    """
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant context")
+
+    convs = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.tenant_id == tid)
+        .all()
+    )
+    invalid = []
+    for c in convs:
+        digits = re.sub(r"\D", "", c.wa_contact_phone or "")
+        if not (8 <= len(digits) <= 15):
+            invalid.append(c)
+
+    if not invalid:
+        return {"ok": True, "deleted_convs": 0, "deleted_messages": 0}
+
+    conv_ids = [c.id for c in invalid]
+    deleted_msgs = 0
+    try:
+        deleted_msgs = (
+            db.query(WhatsAppMessage)
+            .filter(WhatsAppMessage.conversation_id.in_(conv_ids))
+            .delete(synchronize_session=False)
+        )
+        db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.id.in_(conv_ids)
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al limpiar: {e}")
+
+    log_event(
+        "sistema",
+        f"Inbox: {len(invalid)} chats invalidos eliminados",
+        detail=f"{deleted_msgs} mensajes huerfanos borrados. Eran JIDs no individuales (canales, broadcasts).",
+        status="info",
+    )
+    return {"ok": True, "deleted_convs": len(invalid), "deleted_messages": deleted_msgs}
+
+
 @router.post("/dedupe-conversations")
 async def dedupe_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Merge conversations that share the same recipient phone number.
@@ -610,6 +661,10 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
                 if not phone_raw:
                     continue
                 clean_phone = re.sub(r"\D", "", phone_raw)
+                # Defense-in-depth: reject implausible phone numbers (channels,
+                # broadcasts, malformed JIDs that slipped past the Node filter).
+                if not (8 <= len(clean_phone) <= 15):
+                    continue
                 clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
 
                 # Match by last 10 digits across ALL transports (dedupe vs Meta convs)
@@ -717,9 +772,11 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
         if msg_type in ("reaction", "sticker"):
             return {"ok": True, "skipped": msg_type}
 
-        # Match by last 10 digits across ALL transports (avoids duplicates when
-        # the same client previously had a 'meta' conv and now writes via Web).
+        # Defense-in-depth: reject implausible phones (channels, broadcasts,
+        # malformed JIDs) so they never become a fake conversation.
         clean_phone = re.sub(r"\D", "", from_phone)
+        if not (8 <= len(clean_phone) <= 15):
+            return {"ok": True, "skipped": "invalid_phone", "phone": from_phone}
         clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
 
         all_convs = (

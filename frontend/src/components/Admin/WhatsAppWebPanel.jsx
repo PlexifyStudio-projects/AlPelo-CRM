@@ -184,6 +184,29 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
     }
   };
 
+  const cleanupInvalid = async () => {
+    if (!window.confirm('¿Borrar chats con números inválidos (canales, broadcasts, JIDs raros como 281015549427797)? No se puede deshacer.')) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/wa-web/cleanup-invalid-conversations`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'No se pudo limpiar');
+      if (data.deleted_convs === 0) {
+        setError('No hay chats inválidos para borrar. ✓');
+      } else {
+        setError(`✓ ${data.deleted_convs} chats inválidos borrados (${data.deleted_messages} mensajes).`);
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const dedupeConvs = async () => {
     if (!window.confirm('¿Unificar los chats duplicados que tengan el mismo número? Se mueven los mensajes al chat principal y se borran los vacíos.')) return;
     setLoading(true);
@@ -357,6 +380,16 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
                 title="Unifica chats duplicados del mismo numero (e.g. uno Meta antiguo + uno Web nuevo)"
               >
                 Unificar chats duplicados
+              </button>
+            )}
+            {connected && (
+              <button
+                className={`${b}__waweb-btn ${b}__waweb-btn--ghost`}
+                onClick={cleanupInvalid}
+                disabled={loading}
+                title="Borra chats con numeros invalidos (canales, broadcasts, JIDs raros)"
+              >
+                Limpiar chats invalidos
               </button>
             )}
             {connected && (

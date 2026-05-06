@@ -276,9 +276,21 @@ export async function startSession(sessionId, { tenantId, webhookUrl }) {
       for (const msg of messages) {
         if (msg.key?.fromMe) continue;
         const remoteJid = msg.key?.remoteJid || '';
-        // Skip groups and broadcasts
-        if (remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') continue;
+        // WHITELIST: only process individual chats. Skip groups (@g.us),
+        // broadcasts (status@broadcast), channels (@newsletter), linked
+        // devices (@lid), calls (@call), system bots, and any non-individual
+        // JID. These produced fake "phone numbers" like 281015549427797
+        // (truncated channel IDs).
+        if (!remoteJid.endsWith('@s.whatsapp.net')) {
+          continue;
+        }
         const phone = remoteJid.split('@')[0];
+        // Plausibility check: real phone numbers are 8–15 digits, all numeric.
+        // Anything outside that range is almost certainly a malformed JID
+        // we should not create a contact for.
+        if (!/^\d{8,15}$/.test(phone)) {
+          continue;
+        }
 
         let body = '';
         let messageType = 'text';
