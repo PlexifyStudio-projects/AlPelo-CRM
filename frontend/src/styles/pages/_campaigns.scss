@@ -140,6 +140,170 @@ $_fg-payment: #14B8A6;
     }
   }
 
+  // ============================================================================
+  // Empty state — no Meta and no Web configured
+  // ============================================================================
+  &__no-wa {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 64px 32px 80px;
+    background: linear-gradient(180deg, rgba(30, 64, 175, 0.03) 0%, rgba(255,255,255,1) 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(30, 64, 175, 0.08);
+    margin-top: 16px;
+  }
+
+  &__no-wa-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 12px 32px rgba(37, 211, 102, 0.25);
+
+    svg { width: 40px; height: 40px; }
+  }
+
+  &__no-wa-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+  }
+
+  &__no-wa-desc {
+    max-width: 540px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #64748B;
+    margin: 0 0 32px;
+  }
+
+  &__no-wa-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 320px));
+    gap: 16px;
+    margin-bottom: 36px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  &__no-wa-option {
+    text-align: left;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    position: relative;
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0F172A;
+      margin: 12px 0 6px;
+    }
+    p {
+      font-size: 13px;
+      color: #64748B;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  &__no-wa-option-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: #1E40AF;
+    color: #fff;
+
+    &--alt {
+      background: #F59E0B;
+    }
+  }
+
+  &__no-wa-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    border: none;
+    background: #1E40AF;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(30, 64, 175, 0.25);
+    transition: all 0.2s;
+
+    &:hover {
+      background: #1E3A8A;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(30, 64, 175, 0.35);
+    }
+  }
+
+  // ============================================================================
+  // Web mode quota strip — shows daily limit, pacing, warmup phase
+  // ============================================================================
+  &__web-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) auto;
+    align-items: center;
+    gap: 28px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__web-strip-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__web-strip-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #065F46;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  &__web-strip-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #064E3B;
+  }
+
+  &__web-strip-bar {
+    grid-column: 1 / -1;
+    height: 4px;
+    background: rgba(16, 185, 129, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  &__web-strip-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+    transition: width 0.4s ease;
+  }
+
   &__kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1614,7 +1778,44 @@ $_fg-payment: #14B8A6;
 
     &--sent { svg { color: $color-success; } }
     &--failed { svg { color: $color-error; } }
+    &--queued {
+      svg { color: #F59E0B; }
+      background: rgba(#F59E0B, 0.04);
+      border-color: rgba(#F59E0B, 0.18);
+    }
     &--total { svg { color: $color-gray-400; } }
+  }
+
+  &__sending-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 8px;
+
+    > svg { flex-shrink: 0; margin-top: 2px; }
+
+    strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    p {
+      font-size: 13px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    &--queue {
+      background: rgba(#F59E0B, 0.06);
+      border: 1px solid rgba(#F59E0B, 0.18);
+      svg { color: #B45309; }
+      strong { color: #92400E; }
+      p { color: #A16207; }
+    }
   }
 
   &__sending-card-num {

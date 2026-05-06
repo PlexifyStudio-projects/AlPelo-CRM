@@ -8,7 +8,6 @@ import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
 import { formatPhone } from '../../utils/formatters';
-import WebCampaignsView from '../../components/Admin/WebCampaignsView';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -223,7 +222,15 @@ const Campaigns = () => {
   const [contactSearch, setContactSearch] = useState('');
 
   const { tenant } = useTenant();
-  const waConnected = !!(tenant?.wa_access_token);
+
+  // Mode + connection derived from tenant + waModeStatus.
+  // Meta mode: connected when wa_access_token exists.
+  // Web mode: connected when waModeStatus.db_status === 'connected'.
+  const isWebMode = (waModeStatus?.wa_mode || tenant?.wa_mode || 'meta') === 'web';
+  const metaConnected = !!(tenant?.wa_access_token);
+  const webConnected = waModeStatus?.db_status === 'connected';
+  const waConnected = isWebMode ? webConnected : metaConnected;
+  const noWaAtAll = !metaConnected && !webConnected;
 
   const [sendingActive, setSendingActive] = useState(false);
   const [sendQueue, setSendQueue] = useState([]);
@@ -365,7 +372,9 @@ const Campaigns = () => {
     }
 
     const payload = {
-      name: editName, category: editCategory, body: editBody, status: 'draft',
+      name: editName, category: editCategory, body: editBody,
+      // Web mode skips Meta review — plantilla nace lista para enviar.
+      status: isWebMode ? 'approved' : 'draft',
       header_type: editHeaderType || null,
       header_media_url: headerMediaUrl,
       header_text: editHeaderType === 'TEXT' ? editHeaderText : null,
@@ -374,10 +383,15 @@ const Campaigns = () => {
     try {
       if (editId) {
         await templateService.updateTemplate(editId, payload);
-        addNotification('Plantilla actualizada — debes enviarla a Meta de nuevo para aprobacion', 'success');
+        addNotification(
+          isWebMode
+            ? 'Plantilla actualizada'
+            : 'Plantilla actualizada — debes enviarla a Meta de nuevo para aprobacion',
+          'success',
+        );
       } else {
         await templateService.createTemplate(payload);
-        addNotification('Plantilla creada como borrador', 'success');
+        addNotification(isWebMode ? 'Plantilla creada' : 'Plantilla creada como borrador', 'success');
       }
       setShowEditor(false);
       reloadTemplates();
@@ -452,6 +466,8 @@ const Campaigns = () => {
     pending: templates.filter(t => t.status === 'pending').length,
     drafts: templates.filter(t => t.status === 'draft').length,
     totalSent: campaigns.reduce((a, c) => a + (c.sent_count || 0), 0),
+    sending: campaigns.filter(c => c.status === 'sending').length,
+    pausedQuota: campaigns.filter(c => c.status === 'paused_quota').length,
   }), [templates, campaigns]);
 
   const handleSearchAudience = async () => {
@@ -498,9 +514,103 @@ const Campaigns = () => {
     return Object.keys(filters).filter(k => filters[k] !== '' && filters[k] !== null && filters[k] !== undefined).length;
   }, [filters]);
 
+  // ref para detener el polling cuando el envío Web termina
+  const webPollRef = useRef(null);
+
   const startSending = async () => {
     if (!selectedTemplate || selectedContacts.size === 0) return;
 
+    const seenIds = new Set();
+    const contacts = (audienceResults?.contacts || []).filter(c => {
+      if (!selectedContacts.has(c.id) || seenIds.has(c.id)) return false;
+      seenIds.add(c.id);
+      return true;
+    });
+    const queue = contacts.map(c => ({ id: c.id, name: c.name, phone: c.phone, status: 'pending' }));
+
+    // ---- Web mode: delega TODO al backend (pacing + cola + warmup + anti-ban) ----
+    if (isWebMode) {
+      let campId = null;
+      try {
+        const camp = await campaignService.create({
+          name: `${selectedTemplate.name} — ${new Date().toLocaleString('es-CO')}`,
+          campaign_type: 'web_free_text',
+          message_body: selectedTemplate.body,
+          meta_template_name: selectedTemplate.slug,
+          // Backend resuelve la audiencia por phone_list (mismas personas que el dueño marcó)
+          segment_filters: { phone_list: contacts.map(c => c.phone).filter(Boolean) },
+        });
+        campId = camp.id;
+        setActiveCampaignId(campId);
+      } catch (e) {
+        addNotification(e.message || 'No se pudo crear la campaña', 'error');
+        return;
+      }
+
+      setSendQueue(queue);
+      setSendLog([]);
+      setSendStats({ sent: 0, failed: 0, total: queue.length });
+      setSendingActive(true);
+      setSendStep(3);
+      sendingRef.current = true;
+
+      // Lanzar el worker en backend (no bloquea — devuelve enseguida)
+      try {
+        const res = await fetch(`${API_URL}/campaigns/${campId}/send`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'No se pudo iniciar el envío');
+        }
+      } catch (e) {
+        setSendingActive(false);
+        sendingRef.current = false;
+        addNotification(e.message, 'error');
+        return;
+      }
+
+      // Polling cada 3s — el backend persiste sent_count/failed_count y status incrementalmente
+      const poll = async () => {
+        try {
+          const c = await campaignService.get(campId);
+          const total = c.audience_count || queue.length;
+          const sent = c.sent_count || 0;
+          const failed = c.failed_count || 0;
+          const pending = c.pending_count || 0;
+          setSendStats({ sent, failed, total });
+          // Mantener una proyección visual del estado de la cola
+          setSendQueue(prev => prev.map((q, idx) => {
+            if (idx < sent) return { ...q, status: 'sent' };
+            if (idx < sent + failed) return { ...q, status: 'failed' };
+            return q; // pending
+          }));
+          if (c.status !== 'sending') {
+            // Terminó (sent | paused_quota | paused_disconnected | failed)
+            sendingRef.current = false;
+            setSendingActive(false);
+            setSendCurrent(null);
+            if (webPollRef.current) { clearInterval(webPollRef.current); webPollRef.current = null; }
+            // Mensaje contextual según estado final
+            if (c.status === 'paused_quota') {
+              addNotification(`Pausada: ${pending} en cola hasta mañana (límite diario)`, 'warning');
+            } else if (c.status === 'paused_disconnected') {
+              addNotification(`Pausada: WhatsApp desconectado. ${pending} en cola.`, 'warning');
+            } else if (c.status === 'sent') {
+              addNotification(`Campaña completada: ${sent} enviados, ${failed} fallidos`, 'success');
+            } else if (c.status === 'failed') {
+              addNotification('La campaña falló. Revisa el log.', 'error');
+            }
+          }
+        } catch {}
+      };
+      webPollRef.current = setInterval(poll, 3000);
+      poll();
+      return;
+    }
+
+    // ---- Meta mode: legacy client-side loop (mantiene comportamiento original) ----
     let campId = null;
     try {
       const camp = await campaignService.create({
@@ -514,13 +624,6 @@ const Campaigns = () => {
       setActiveCampaignId(campId);
     } catch {}
 
-    const seenIds = new Set();
-    const contacts = (audienceResults?.contacts || []).filter(c => {
-      if (!selectedContacts.has(c.id) || seenIds.has(c.id)) return false;
-      seenIds.add(c.id);
-      return true;
-    });
-    const queue = contacts.map(c => ({ id: c.id, name: c.name, phone: c.phone, status: 'pending' }));
     setSendQueue(queue);
     setSendLog([]);
     setSendStats({ sent: 0, failed: 0, total: queue.length });
@@ -573,10 +676,24 @@ const Campaigns = () => {
     sendingRef.current = false;
   };
 
-  const stopSending = () => {
+  const stopSending = async () => {
     sendingRef.current = false;
     setSendingActive(false);
+    if (webPollRef.current) { clearInterval(webPollRef.current); webPollRef.current = null; }
+    // En Web mode el worker corre en backend — pedimos pausa explícita
+    if (isWebMode && activeCampaignId) {
+      try {
+        await campaignService.update(activeCampaignId, { status: 'paused_quota' });
+      } catch {}
+    }
   };
+
+  // Cleanup polling al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (webPollRef.current) { clearInterval(webPollRef.current); webPollRef.current = null; }
+    };
+  }, []);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -609,17 +726,46 @@ const Campaigns = () => {
     return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campañas...</span></div></div>;
   }
 
-  // Web mode → totally different UI: free text, no templates, daily quota awareness.
-  if (waModeStatus?.wa_mode === 'web') {
+  // Empty state — neither Meta nor Web is configured. Send the dueño to Settings.
+  if (noWaAtAll) {
     return (
       <div className={B}>
         <div className={`${B}__header`}>
           <div className={`${B}__header-left`}>
             <h1 className={`${B}__title`}>Campañas</h1>
-            <span className={`${B}__subtitle`}>CENTRO DE MARKETING · WHATSAPP WEB (no oficial)</span>
+            <span className={`${B}__subtitle`}>CENTRO DE MARKETING</span>
           </div>
         </div>
-        <WebCampaignsView b={B} waStatus={waModeStatus} onRefreshStatus={refreshWaMode} />
+        <div className={`${B}__no-wa`}>
+          <div className={`${B}__no-wa-icon`}>
+            <WhatsAppIcon />
+          </div>
+          <h2 className={`${B}__no-wa-title`}>Conecta WhatsApp para empezar</h2>
+          <p className={`${B}__no-wa-desc`}>
+            Para enviar campañas necesitas tener WhatsApp conectado. Tienes dos opciones:
+            la API oficial de Meta (Business) o tu propio número personal escaneando un QR.
+          </p>
+          <div className={`${B}__no-wa-options`}>
+            <div className={`${B}__no-wa-option`}>
+              <div className={`${B}__no-wa-option-tag`}>OFICIAL</div>
+              <h3>WhatsApp Business API</h3>
+              <p>Mensajes ilimitados con plantillas aprobadas por Meta. Ideal para producción seria.</p>
+            </div>
+            <div className={`${B}__no-wa-option`}>
+              <div className={`${B}__no-wa-option-tag ${B}__no-wa-option-tag--alt`}>QR</div>
+              <h3>WhatsApp Web (no oficial)</h3>
+              <p>Usa tu número personal. Texto libre, sin aprobaciones. Bajo tu propio riesgo y con límite diario.</p>
+            </div>
+          </div>
+          <button className={`${B}__no-wa-cta`} onClick={() => {
+            // Marca para que Settings auto-abra el panel Meta/WhatsApp (misma key que usa Dashboard)
+            try { sessionStorage.setItem('settings:open-panel', 'meta'); } catch {}
+            window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'settings' }));
+          }}>
+            Ir a Configuración
+            <ChevronRight />
+          </button>
+        </div>
       </div>
     );
   }
@@ -629,7 +775,9 @@ const Campaigns = () => {
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <h1 className={`${B}__title`}>Campañas</h1>
-          <span className={`${B}__subtitle`}>CENTRO DE MARKETING · WHATSAPP BUSINESS</span>
+          <span className={`${B}__subtitle`}>
+            CENTRO DE MARKETING · {isWebMode ? 'WHATSAPP WEB (no oficial)' : 'WHATSAPP BUSINESS'}
+          </span>
         </div>
         <div className={`${B}__header-actions`}>
           {mainTab === 'templates' && (
@@ -643,18 +791,62 @@ const Campaigns = () => {
         <div className={`${B}__wa-disconnected`}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <div>
-            <strong>WhatsApp no conectado</strong>
-            <p>Conecta tu cuenta de WhatsApp Business en Configuración para ver y enviar plantillas de campañas.</p>
+            <strong>{isWebMode ? 'WhatsApp Web no conectado' : 'WhatsApp Business no conectado'}</strong>
+            <p>
+              {isWebMode
+                ? 'Vaya a Configuración → Numero personal (Web) y escanee el QR para activar.'
+                : 'Conecta tu cuenta de WhatsApp Business en Configuración para ver y enviar plantillas de campañas.'}
+            </p>
+          </div>
+        </div>
+      )}
+      {isWebMode && waConnected && (
+        <div className={`${B}__web-strip`}>
+          <div className={`${B}__web-strip-item`}>
+            <span className={`${B}__web-strip-label`}>Disponibles hoy</span>
+            <span className={`${B}__web-strip-value`}>
+              {Math.max(0, (waModeStatus?.daily_limit || 20) - (waModeStatus?.sent_today || 0))} / {waModeStatus?.daily_limit || 20}
+            </span>
+          </div>
+          <div className={`${B}__web-strip-item`}>
+            <span className={`${B}__web-strip-label`}>Pacing entre msgs</span>
+            <span className={`${B}__web-strip-value`}>
+              {(waModeStatus?.pacing_seconds || [30,90])[0]}–{(waModeStatus?.pacing_seconds || [30,90])[1]}s
+            </span>
+          </div>
+          <div className={`${B}__web-strip-item`}>
+            <span className={`${B}__web-strip-label`}>Fase warm-up</span>
+            <span className={`${B}__web-strip-value`}>
+              {(() => {
+                if (!waModeStatus?.warmup_started_at) return 'Iniciando';
+                const days = Math.floor((Date.now() - new Date(waModeStatus.warmup_started_at).getTime()) / 86400000);
+                if (days < 3) return `Día ${days + 1} (cap 20)`;
+                if (days < 7) return `Día ${days + 1} (cap 50)`;
+                if (days < 14) return `Día ${days + 1} (cap 100)`;
+                return `Día ${days + 1} (cap completo)`;
+              })()}
+            </span>
+          </div>
+          <div className={`${B}__web-strip-bar`}>
+            <div className={`${B}__web-strip-bar-fill`} style={{ width: `${Math.min(100, ((waModeStatus?.sent_today || 0) / Math.max(1, waModeStatus?.daily_limit || 20)) * 100)}%` }} />
           </div>
         </div>
       )}
       <div className={`${B}__kpis`}>
-        {[
-          { value: waConnected ? stats.total : 0, label: 'Total plantillas', color: '#1E40AF' },
-          { value: waConnected ? stats.approved : 0, label: 'Aprobadas', color: '#10B981' },
-          { value: waConnected ? stats.pending : 0, label: 'En revision', color: '#F59E0B' },
-          { value: stats.totalSent, label: 'Mensajes enviados', color: '#6366F1' },
-        ].map((kpi, i) => (
+        {(isWebMode
+          ? [
+              { value: waConnected ? stats.total : 0, label: 'Total plantillas', color: '#1E40AF' },
+              { value: waConnected ? (waModeStatus?.sent_today || 0) : 0, label: 'Enviados hoy', color: '#10B981' },
+              { value: stats.sending || 0, label: 'Enviando ahora', color: '#F59E0B' },
+              { value: stats.totalSent, label: 'Mensajes enviados', color: '#6366F1' },
+            ]
+          : [
+              { value: waConnected ? stats.total : 0, label: 'Total plantillas', color: '#1E40AF' },
+              { value: waConnected ? stats.approved : 0, label: 'Aprobadas', color: '#10B981' },
+              { value: waConnected ? stats.pending : 0, label: 'En revision', color: '#F59E0B' },
+              { value: stats.totalSent, label: 'Mensajes enviados', color: '#6366F1' },
+            ]
+        ).map((kpi, i) => (
           <div key={i} className={`${B}__kpi`}>
             <div className={`${B}__kpi-indicator`} style={{ background: kpi.color }} />
             <div className={`${B}__kpi-content`}>
@@ -703,7 +895,9 @@ const Campaigns = () => {
           ) : (
             <div className={`${B}__tpl-grid`}>
               {filteredTemplates.map(t => {
-                const st = STATUS_CONFIG[t.status] || STATUS_CONFIG.draft;
+                // In Web mode, no Meta approval workflow — always show as ready.
+                const effectiveStatus = isWebMode ? 'approved' : t.status;
+                const st = STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.draft;
                 const StatusIcon = st.icon;
                 return (
                   <div key={t.id} className={`${B}__tpl-card ${!waConnected ? `${B}__tpl-card--disabled` : ''}`}>
@@ -711,7 +905,7 @@ const Campaigns = () => {
                       <div className={`${B}__tpl-card-meta`}>
                         <span className={`${B}__tpl-card-category`}>{t.category || 'general'}</span>
                         <span className={`${B}__tpl-card-status`} style={{ color: st.color, background: st.bg }}>
-                          <StatusIcon /> {st.label}
+                          <StatusIcon /> {isWebMode ? 'Lista' : st.label}
                         </span>
                       </div>
                       <h3 className={`${B}__tpl-card-name`}>{t.name}</h3>
@@ -725,27 +919,9 @@ const Campaigns = () => {
                     </div>
 
                     <div className={`${B}__tpl-card-footer`}>
-                      {t.status === 'draft' && (
+                      {isWebMode ? (
                         <>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
-                            <SendIcon /> {actionLoading === t.id ? 'Enviando...' : 'Enviar a Meta'}
-                          </button>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
-                            <EditIcon />
-                          </button>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
-                            <TrashIcon />
-                          </button>
-                        </>
-                      )}
-                      {t.status === 'pending' && (
-                        <button className={`${B}__tpl-btn ${B}__tpl-btn--check`} onClick={() => handleCheckStatus(t.id)} disabled={actionLoading === t.id}>
-                          <RefreshIcon /> {actionLoading === t.id ? 'Verificando...' : 'Verificar estado'}
-                        </button>
-                      )}
-                      {t.status === 'approved' && (
-                        <>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--send`} onClick={() => { setMainTab('send'); setSelectedTemplate(t); setSendStep(1); }}>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--send`} onClick={() => { setMainTab('send'); setSelectedTemplate(t); setSendStep(1); }} disabled={!waConnected}>
                             <RocketIcon /> Usar en campaña
                           </button>
                           <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
@@ -754,27 +930,64 @@ const Campaigns = () => {
                           <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
                             <TrashIcon />
                           </button>
+                          <span className={`${B}__tpl-card-hint ${B}__tpl-card-hint--approved`}>
+                            Texto libre — sin aprobacion de Meta. Lista para enviar.
+                          </span>
                         </>
-                      )}
-                      {t.status === 'rejected' && (
+                      ) : (
                         <>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
-                            <RefreshIcon /> Reenviar a Meta
-                          </button>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
-                            <EditIcon />
-                          </button>
-                          <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
-                            <TrashIcon />
-                          </button>
+                          {t.status === 'draft' && (
+                            <>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
+                                <SendIcon /> {actionLoading === t.id ? 'Enviando...' : 'Enviar a Meta'}
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                                <EditIcon />
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                                <TrashIcon />
+                              </button>
+                            </>
+                          )}
+                          {t.status === 'pending' && (
+                            <button className={`${B}__tpl-btn ${B}__tpl-btn--check`} onClick={() => handleCheckStatus(t.id)} disabled={actionLoading === t.id}>
+                              <RefreshIcon /> {actionLoading === t.id ? 'Verificando...' : 'Verificar estado'}
+                            </button>
+                          )}
+                          {t.status === 'approved' && (
+                            <>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--send`} onClick={() => { setMainTab('send'); setSelectedTemplate(t); setSendStep(1); }}>
+                                <RocketIcon /> Usar en campaña
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                                <EditIcon />
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                                <TrashIcon />
+                              </button>
+                            </>
+                          )}
+                          {t.status === 'rejected' && (
+                            <>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
+                                <RefreshIcon /> Reenviar a Meta
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                                <EditIcon />
+                              </button>
+                              <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                                <TrashIcon />
+                              </button>
+                            </>
+                          )}
+                          <span className={`${B}__tpl-card-hint ${B}__tpl-card-hint--${t.status}`}>
+                            {t.status === 'draft' && 'Envia a Meta para revision (tarda 1-24 horas)'}
+                            {t.status === 'pending' && 'Meta esta revisando tu plantilla. Puede tardar 1-24 horas'}
+                            {t.status === 'rejected' && 'Meta rechazo esta plantilla. Edita el mensaje y reintenta'}
+                            {t.status === 'approved' && 'Lista para enviar a tus clientes'}
+                          </span>
                         </>
                       )}
-                      <span className={`${B}__tpl-card-hint ${B}__tpl-card-hint--${t.status}`}>
-                        {t.status === 'draft' && 'Envia a Meta para revision (tarda 1-24 horas)'}
-                        {t.status === 'pending' && 'Meta esta revisando tu plantilla. Puede tardar 1-24 horas'}
-                        {t.status === 'rejected' && 'Meta rechazo esta plantilla. Edita el mensaje y reintenta'}
-                        {t.status === 'approved' && 'Lista para enviar a tus clientes'}
-                      </span>
                     </div>
                   </div>
                 );
@@ -797,21 +1010,27 @@ const Campaigns = () => {
           {sendStep === 0 && (
             <div className={`${B}__send-section`}>
               <div className={`${B}__send-section-header`}>
-                <h2>Selecciona una plantilla aprobada</h2>
-                <p>Solo las plantillas aprobadas por Meta pueden usarse para envio masivo</p>
+                <h2>Selecciona una plantilla{isWebMode ? '' : ' aprobada'}</h2>
+                <p>
+                  {isWebMode
+                    ? 'En modo Web puedes usar cualquier plantilla — no requiere aprobacion de Meta.'
+                    : 'Solo las plantillas aprobadas por Meta pueden usarse para envio masivo'}
+                </p>
               </div>
               {(() => {
-                const approved = templates.filter(t => t.status === 'approved');
-                if (approved.length === 0) return (
+                const usable = isWebMode ? templates : templates.filter(t => t.status === 'approved');
+                if (usable.length === 0) return (
                   <EmptyState
                     icon={<AlertIcon />}
-                    title="Sin plantillas aprobadas"
-                    description="Primero crea y envia plantillas a Meta para aprobacion desde la pestana de Plantillas"
+                    title={isWebMode ? 'Sin plantillas' : 'Sin plantillas aprobadas'}
+                    description={isWebMode
+                      ? 'Crea tu primera plantilla desde la pestana de Plantillas'
+                      : 'Primero crea y envia plantillas a Meta para aprobacion desde la pestana de Plantillas'}
                   />
                 );
                 return (
                   <div className={`${B}__tpl-select-grid`}>
-                    {approved.map(t => (
+                    {usable.map(t => (
                       <div
                         key={t.id}
                         className={`${B}__tpl-select-card ${selectedTemplate?.id === t.id ? `${B}__tpl-select-card--selected` : ''}`}
@@ -1151,7 +1370,11 @@ const Campaigns = () => {
                     {sendStats.failed === 0 ? <CheckCircleIcon /> : <AlertIcon />}
                   </div>
                 )}
-                <h2>{sendingActive ? 'Enviando campaña...' : (sendStats.failed === 0 ? 'Campaña enviada' : 'Envio completado')}</h2>
+                <h2>
+                  {sendingActive
+                    ? (isWebMode ? 'Enviando campaña (con pacing anti-bloqueo)...' : 'Enviando campaña...')
+                    : (sendStats.failed === 0 ? 'Campaña enviada' : 'Envio completado')}
+                </h2>
                 <p className={`${B}__sending-hero-counter`}>
                   {sendingActive
                     ? `${sendStats.sent + sendStats.failed} de ${sendStats.total}`
@@ -1166,23 +1389,40 @@ const Campaigns = () => {
                 </div>
               </div>
 
-              <div className={`${B}__sending-cards`}>
-                <div className={`${B}__sending-card ${B}__sending-card--sent`}>
-                  <CheckCircleIcon />
-                  <span className={`${B}__sending-card-num`}>{sendStats.sent}</span>
-                  <span className={`${B}__sending-card-label`}>Enviados</span>
+              {(() => {
+                const queuedForTomorrow = isWebMode
+                  ? Math.max(0, sendStats.total - sendStats.sent - sendStats.failed)
+                  : 0;
+                const cards = [
+                  { className: `${B}__sending-card--sent`,  icon: <CheckCircleIcon />, num: sendStats.sent,   label: 'Enviados' },
+                  { className: `${B}__sending-card--failed`, icon: <XCircleIcon />,    num: sendStats.failed, label: 'Fallidos' },
+                ];
+                if (isWebMode && queuedForTomorrow > 0) {
+                  cards.push({ className: `${B}__sending-card--queued`, icon: <ClockIcon />, num: queuedForTomorrow, label: 'En cola' });
+                }
+                cards.push({ className: `${B}__sending-card--total`, icon: <UsersIcon />, num: sendStats.total, label: 'Total' });
+                return (
+                  <div className={`${B}__sending-cards`}>
+                    {cards.map((c, i) => (
+                      <div key={i} className={`${B}__sending-card ${c.className}`}>
+                        {c.icon}
+                        <span className={`${B}__sending-card-num`}>{c.num}</span>
+                        <span className={`${B}__sending-card-label`}>{c.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {isWebMode && !sendingActive && (sendStats.total - sendStats.sent - sendStats.failed) > 0 && (
+                <div className={`${B}__sending-banner ${B}__sending-banner--queue`}>
+                  <ClockIcon />
+                  <div>
+                    <strong>{sendStats.total - sendStats.sent - sendStats.failed} mensaje{(sendStats.total - sendStats.sent - sendStats.failed) === 1 ? '' : 's'} en cola</strong>
+                    <p>Se enviarán automáticamente mañana cuando se renueve tu límite diario. No tienes que hacer nada — el sistema lo hace solo.</p>
+                  </div>
                 </div>
-                <div className={`${B}__sending-card ${B}__sending-card--failed`}>
-                  <XCircleIcon />
-                  <span className={`${B}__sending-card-num`}>{sendStats.failed}</span>
-                  <span className={`${B}__sending-card-label`}>Fallidos</span>
-                </div>
-                <div className={`${B}__sending-card ${B}__sending-card--total`}>
-                  <UsersIcon />
-                  <span className={`${B}__sending-card-num`}>{sendStats.total}</span>
-                  <span className={`${B}__sending-card-label`}>Total</span>
-                </div>
-              </div>
+              )}
 
               <SendDetailCollapsible sendLog={sendLog} sendingActive={sendingActive} sendCurrent={sendCurrent} logEndRef={logEndRef} />
 

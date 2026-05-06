@@ -234,6 +234,8 @@ def run_migrations(engine):
         ("tenant", "wa_web_pacing_min_seconds", "INTEGER NOT NULL DEFAULT 30"),
         ("tenant", "wa_web_pacing_max_seconds", "INTEGER NOT NULL DEFAULT 90"),
         ("tenant", "wa_web_disclaimer_accepted_at", "TIMESTAMP"),
+        ("campaign", "pending_client_ids", "JSONB DEFAULT '[]'::jsonb"),
+        ("campaign", "last_run_at", "TIMESTAMP"),
     ]
 
     for table, column, col_type in migrations:

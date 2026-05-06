@@ -985,6 +985,11 @@ class Campaign(Base):
     failed_count = Column(Integer, default=0)
     responded_count = Column(Integer, default=0)
 
+    # Web mode: client_ids still pending when paused_quota — picked up by the
+    # daily auto-resume worker when the tenant's counter rolls over.
+    pending_client_ids = Column(JSON, default=list)
+    last_run_at = Column(DateTime, nullable=True)
+
     # AI
     ai_variants = Column(JSON)  # [{"body": "...", "reason": "..."}, ...]
 

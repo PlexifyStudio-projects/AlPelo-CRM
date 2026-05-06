@@ -1078,9 +1078,13 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         _trigger_token_pause()
                         log_event("respuesta", "Token expirado — mensaje no enviado", detail=f"Lina se pauso automaticamente. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
                         break
-                    # Web mode: don't retry on quota / not-connected
-                    if _sender.transport == "web" and result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED"):
-                        log_event("respuesta", "WA Web: envio bloqueado", detail=error_msg, conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                    # Web mode: don't retry on quota / not-connected / rule-blocked
+                    # (retrying 5s later won't change quota status, connection state, or
+                    # whether a recipient cooldown is still active)
+                    if _sender.transport == "web" and result.error_code in ("DAILY_LIMIT", "NOT_CONNECTED", "RULE_BLOCKED"):
+                        log_event("respuesta", "WA Web: envio bloqueado",
+                                  detail=f"{error_msg} (codigo: {result.error_code})",
+                                  conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                         break
                     if attempt < max_retries - 1:
                         log_event("sistema", "Envio fallido, reintentando...", detail=f"Error: {error_msg}. Reintento en 5s.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
@@ -1129,7 +1133,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # Track in global rate limiter
             _ai_reply_timestamps.append(time.time())
 
-            print(f"[Lina IA] Replied to conv {conv_id}: {clean_response[:60]}...")
+            print(f"[Lina IA] Reply to conv {conv_id} status={send_status}: {clean_response[:60]}...")
             if send_status == "sent":
                 log_event("respuesta", f"Respondi a {conv.wa_contact_name or 'cliente'}", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
 

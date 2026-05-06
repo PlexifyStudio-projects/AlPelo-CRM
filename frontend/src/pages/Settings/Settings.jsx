@@ -589,13 +589,19 @@ const Settings = () => {
   const [activeWaMode, setActiveWaMode] = useState('meta');
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
 
-  // Auto-open panel when navigated from Dashboard "Mi info" button
+  // Auto-open panel when navigated from Dashboard "Mi info" or Campañas empty state
   useEffect(() => {
     try {
       const requested = sessionStorage.getItem('settings:open-panel');
       if (requested) {
         sessionStorage.removeItem('settings:open-panel');
-        setOpenSection(requested === 'reservas' ? 'booking' : requested);
+        const target = requested === 'reservas' ? 'booking' : requested;
+        setOpenSection(target);
+        // Scroll suave hasta el panel desplegado
+        setTimeout(() => {
+          const el = document.querySelector(`.${'settings'}__panel`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 200);
       }
     } catch {}
   }, []);

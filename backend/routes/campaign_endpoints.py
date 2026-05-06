@@ -51,10 +51,13 @@ def _serialize(c: Campaign) -> dict:
         "sent_count": c.sent_count or 0,
         "failed_count": c.failed_count or 0,
         "responded_count": c.responded_count or 0,
+        "pending_count": len(c.pending_client_ids or []),
+        "transport": c.transport or "meta",
         "ai_variants": c.ai_variants,
         "created_by": c.created_by,
         "created_at": c.created_at.isoformat() if c.created_at else None,
         "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+        "last_run_at": c.last_run_at.isoformat() if c.last_run_at else None,
     }
 
 
@@ -1319,19 +1322,25 @@ async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audienc
             db.commit()
             return
 
-        sent = 0
-        failed = 0
+        # When resuming a paused campaign we keep the prior sent/failed counts
+        # and only iterate the remaining audience.
+        sent = int(c.sent_count or 0)
+        failed = int(c.failed_count or 0)
         aborted_reason = None
-        total = len(audience_client_ids)
+        total = int(c.audience_count or len(audience_client_ids))
+        last_processed_idx = -1
+        c.last_run_at = datetime.utcnow()
+        db.commit()
 
         log_event(
             "campaign",
-            f"Iniciando campana '{c.name}' a {total} contactos (Web)",
+            f"{'Reanudando' if sent or failed else 'Iniciando'} campana '{c.name}' — {len(audience_client_ids)} pendientes (Web)",
             detail=f"Pacing: {tenant.wa_web_pacing_min_seconds}-{tenant.wa_web_pacing_max_seconds}s",
             status="info",
         )
 
         for idx, client_id in enumerate(audience_client_ids):
+            last_processed_idx = idx
             # Refresh tenant view of quota each iteration (fresh sent_today after midnight, etc.)
             db.expire(tenant)
             client_obj = db.query(Client).filter(Client.id == client_id).first()
@@ -1351,7 +1360,8 @@ async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audienc
             resolved_body = resolved_body.replace("{{servicio}}", client_obj.favorite_service or "tu servicio")
 
             try:
-                result = await sender.send_text(phone, resolved_body)
+                # is_campaign=True engages full anti-ban: hours, cooldown, jitter
+                result = await sender.send_text(phone, resolved_body, is_campaign=True)
             except Exception as e:
                 failed += 1
                 print(f"[CAMPAIGN-BG] send error to {phone}: {e}")
@@ -1390,20 +1400,30 @@ async def _run_web_campaign_background(campaign_id: int, tenant_id: int, audienc
         if c:
             c.sent_count = sent
             c.failed_count = failed
+            # Pending = everything in audience_client_ids from the aborted index
+            # onwards. If we finished the loop cleanly, pending is empty.
+            if aborted_reason and last_processed_idx >= 0:
+                pending = audience_client_ids[last_processed_idx:]
+            elif aborted_reason and last_processed_idx < 0:
+                pending = list(audience_client_ids)
+            else:
+                pending = []
+            c.pending_client_ids = pending
+
             if aborted_reason == "DAILY_LIMIT":
                 c.status = "paused_quota"
                 log_event("campaign", f"Campana '{c.name}' pausada — limite diario alcanzado",
-                          detail=f"Enviados: {sent}/{total}. Reanudara cuando aumente el limite o se reinicie manana.",
+                          detail=f"Enviados: {sent}/{total}. {len(pending)} en cola — se reanuda automaticamente manana.",
                           status="warning")
             elif aborted_reason == "NOT_CONNECTED":
                 c.status = "paused_disconnected"
                 log_event("campaign", f"Campana '{c.name}' pausada — sesion WA desconectada",
-                          detail=f"Enviados: {sent}/{total}. Reconecte y reinicie.",
+                          detail=f"Enviados: {sent}/{total}. {len(pending)} en cola — reconecta el WhatsApp para reanudar.",
                           status="error")
             elif aborted_reason == "RULE_BLOCKED":
                 c.status = "paused_quota"
                 log_event("campaign", f"Campana '{c.name}' pausada — regla anti-bloqueo activa",
-                          detail=f"Enviados: {sent}/{total}. La proteccion bloqueo el envio para no banear el numero.",
+                          detail=f"Enviados: {sent}/{total}. {len(pending)} en cola. La proteccion bloqueo el envio para no banear el numero.",
                           status="warning")
             else:
                 c.status = "sent"

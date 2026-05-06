@@ -28,6 +28,31 @@ from routes._helpers import normalize_phone
 
 
 # ============================================================================
+# Daily counter reset — shared between sender and the status endpoint so
+# the UI shows 0/cap at midnight without needing a send to trigger the reset.
+# ============================================================================
+def reset_daily_counter_if_needed(db, tenant) -> bool:
+    """Zero out wa_web_sent_today when the date rolls over. Returns True if reset.
+
+    Idempotent and safe to call from any code path that reads the counter.
+    """
+    today = date.today()
+    if tenant.wa_web_sent_today_date == today:
+        return False
+    tenant.wa_web_sent_today = 0
+    tenant.wa_web_sent_today_date = today
+    try:
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return False
+    return True
+
+
+# ============================================================================
 # Result type — uniform across Meta and Web
 # ============================================================================
 @dataclass
@@ -351,16 +376,7 @@ class WebSender(WhatsAppSender):
 
     def _check_quota(self) -> Optional[SendResult]:
         """Verify daily limit (warm-up curve + admin cap). Returns error result if blocked."""
-        today = date.today()
-        # Reset counter if we're on a new day
-        if self.tenant.wa_web_sent_today_date != today:
-            self.tenant.wa_web_sent_today = 0
-            self.tenant.wa_web_sent_today_date = today
-            try:
-                self.db.commit()
-            except Exception:
-                self.db.rollback()
-
+        reset_daily_counter_if_needed(self.db, self.tenant)
         cap = self._warmup_cap()
         if (self.tenant.wa_web_sent_today or 0) >= cap:
             return SendResult(
@@ -413,34 +429,48 @@ class WebSender(WhatsAppSender):
         except Exception as e:
             return None, f"{type(e).__name__}: {e}"
 
-    async def send_text(self, phone: str, text: str) -> SendResult:
+    async def send_text(self, phone: str, text: str, is_campaign: bool = False) -> SendResult:
+        """Send text via Baileys.
+
+        is_campaign=False (default): conversational reply — only the circuit
+            breaker applies. Hours/cooldown rules are skipped because answering
+            real clients must work 24/7.
+        is_campaign=True: mass-send — full anti-ban stack (hours, cooldown, etc.)
+        """
         if self.tenant.wa_web_status != "connected":
             return SendResult(ok=False, error=f"Web session not connected (status: {self.tenant.wa_web_status})",
                               error_code="NOT_CONNECTED", transport="web")
-        quota = self._check_quota()
-        if quota:
-            return quota
+        # Daily quota only enforced for campaigns — conversations don't count
+        # against the warm-up cap (they're proof of legitimate use).
+        if is_campaign:
+            quota = self._check_quota()
+            if quota:
+                return quota
 
-        # Anti-ban guard rails: business hours, recipient cooldown, circuit breaker
+        # Anti-ban guard rails: scoped by mode (campaign vs conversation)
         from services.whatsapp.anti_ban import evaluate_send, vary_message, record_send_outcome
-        block = evaluate_send(self.db, self.tenant.id, phone)
+        block = evaluate_send(self.db, self.tenant.id, phone, is_campaign=is_campaign)
         if block:
             return SendResult(ok=False, error=block, error_code="RULE_BLOCKED", transport="web")
 
         # Add invisible jitter so identical templates don't hash-match across recipients
-        text_to_send = vary_message(text)
+        text_to_send = vary_message(text) if is_campaign else text
 
+        normalized = normalize_phone(phone)
         data, err = await self._post(f"/sessions/{self._session_id()}/send", {
-            "to": normalize_phone(phone),
+            "to": normalized,
             "type": "text",
             "text": text_to_send,
         })
         if err:
             record_send_outcome(self.tenant.id, success=False)
+            print(f"[WebSender] send_text FAIL tenant={self.tenant.id} to={normalized} mode={'campaign' if is_campaign else 'conv'} err={err}")
             return SendResult(ok=False, error=err, transport="web")
         record_send_outcome(self.tenant.id, success=True)
         self._bump_sent()
-        return SendResult(ok=True, wa_message_id=data.get("messageId"), transport="web")
+        msg_id = data.get("messageId")
+        print(f"[WebSender] send_text OK tenant={self.tenant.id} to={normalized} mode={'campaign' if is_campaign else 'conv'} msgId={msg_id}")
+        return SendResult(ok=True, wa_message_id=msg_id, transport="web")
 
     async def send_template(self, phone, template_name, language_code="es", parameters=None, header=None) -> SendResult:
         # Web mode has no concept of templates — render the body inline

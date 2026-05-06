@@ -184,6 +184,29 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
     }
   };
 
+  const dedupeConvs = async () => {
+    if (!window.confirm('¿Unificar los chats duplicados que tengan el mismo número? Se mueven los mensajes al chat principal y se borran los vacíos.')) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/wa-web/dedupe-conversations`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'No se pudo unificar');
+      if (data.groups_merged === 0) {
+        setError('No hay chats duplicados para unificar.');
+      } else {
+        setError(`✓ ${data.groups_merged} grupos unificados. ${data.messages_moved} mensajes movidos, ${data.duplicates_deleted} chats vacíos borrados.`);
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const purgeChats = async (scope = 'all') => {
     const msg = scope === 'current'
       ? '¿Borrar TODOS los chats Web del numero conectado actualmente? No se puede deshacer.'
@@ -328,6 +351,16 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
             )}
             {connected && (
               <button
+                className={`${b}__waweb-btn ${b}__waweb-btn--ghost`}
+                onClick={dedupeConvs}
+                disabled={loading}
+                title="Unifica chats duplicados del mismo numero (e.g. uno Meta antiguo + uno Web nuevo)"
+              >
+                Unificar chats duplicados
+              </button>
+            )}
+            {connected && (
+              <button
                 className={`${b}__waweb-btn ${b}__waweb-btn--danger`}
                 onClick={() => purgeChats('all')}
                 disabled={loading}
@@ -400,40 +433,101 @@ export default function WhatsAppWebPanel({ b, onModeChange }) {
             </div>
           )}
 
-          {/* Tunables */}
+          {/* Capacity presets — WhatsApp Web no expone tu límite real, así que el dueño elige */}
           {connected && (
-            <div className={`${b}__waweb-controls`}>
-              <label className={`${b}__waweb-control`}>
-                <span>Limite diario maximo</span>
-                <input
-                  type="number"
-                  min={5}
-                  max={500}
-                  value={status?.daily_limit || 20}
-                  onChange={(e) => updateLimits({ daily_limit: parseInt(e.target.value, 10) || 20 })}
-                />
-              </label>
-              <label className={`${b}__waweb-control`}>
-                <span>Pausa minima (segundos)</span>
-                <input
-                  type="number"
-                  min={10}
-                  max={600}
-                  value={(status?.pacing_seconds || [30, 90])[0]}
-                  onChange={(e) => updateLimits({ pacing_min_seconds: parseInt(e.target.value, 10) || 30 })}
-                />
-              </label>
-              <label className={`${b}__waweb-control`}>
-                <span>Pausa maxima (segundos)</span>
-                <input
-                  type="number"
-                  min={10}
-                  max={600}
-                  value={(status?.pacing_seconds || [30, 90])[1]}
-                  onChange={(e) => updateLimits({ pacing_max_seconds: parseInt(e.target.value, 10) || 90 })}
-                />
-              </label>
-            </div>
+            <>
+              <div className={`${b}__waweb-presets-intro`}>
+                <strong>Capacidad de envío diario</strong>
+                <p>
+                  WhatsApp <em>no expone</em> tu límite real en modo Web. Estos presets son
+                  recomendaciones probadas. Empieza Conservador y sube solo si tu número
+                  ya tiene historial y nunca ha sido reportado.
+                </p>
+              </div>
+              <div className={`${b}__waweb-presets`}>
+                {[
+                  {
+                    id: 'conservative',
+                    label: 'Conservador',
+                    desc: 'Recomendado para números nuevos',
+                    cap: 80, pmin: 60, pmax: 180,
+                    color: '#10B981',
+                  },
+                  {
+                    id: 'moderate',
+                    label: 'Moderado',
+                    desc: 'Números con uso normal previo',
+                    cap: 120, pmin: 30, pmax: 90,
+                    color: '#3B82F6',
+                  },
+                  {
+                    id: 'aggressive',
+                    label: 'Agresivo',
+                    desc: 'Solo números business antiguos',
+                    cap: 200, pmin: 20, pmax: 60,
+                    color: '#F59E0B',
+                  },
+                ].map(p => {
+                  const active = (status?.daily_limit || 20) === p.cap
+                              && (status?.pacing_seconds || [30,90])[0] === p.pmin
+                              && (status?.pacing_seconds || [30,90])[1] === p.pmax;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`${b}__waweb-preset ${active ? `${b}__waweb-preset--active` : ''}`}
+                      style={active ? { borderColor: p.color, boxShadow: `0 0 0 3px ${p.color}22` } : {}}
+                      onClick={() => updateLimits({
+                        daily_limit: p.cap,
+                        pacing_min_seconds: p.pmin,
+                        pacing_max_seconds: p.pmax,
+                      })}
+                    >
+                      <span className={`${b}__waweb-preset-label`} style={{ color: p.color }}>{p.label}</span>
+                      <span className={`${b}__waweb-preset-cap`}>{p.cap} msgs/día</span>
+                      <span className={`${b}__waweb-preset-pacing`}>Pausa {p.pmin}–{p.pmax}s</span>
+                      <span className={`${b}__waweb-preset-desc`}>{p.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <details className={`${b}__waweb-custom`}>
+                <summary>Personalizar manualmente</summary>
+                <div className={`${b}__waweb-controls`}>
+                  <label className={`${b}__waweb-control`}>
+                    <span>Limite diario maximo</span>
+                    <input
+                      type="number"
+                      min={5}
+                      max={500}
+                      value={status?.daily_limit || 20}
+                      onChange={(e) => updateLimits({ daily_limit: parseInt(e.target.value, 10) || 20 })}
+                    />
+                  </label>
+                  <label className={`${b}__waweb-control`}>
+                    <span>Pausa minima (segundos)</span>
+                    <input
+                      type="number"
+                      min={10}
+                      max={600}
+                      value={(status?.pacing_seconds || [30, 90])[0]}
+                      onChange={(e) => updateLimits({ pacing_min_seconds: parseInt(e.target.value, 10) || 30 })}
+                    />
+                  </label>
+                  <label className={`${b}__waweb-control`}>
+                    <span>Pausa maxima (segundos)</span>
+                    <input
+                      type="number"
+                      min={10}
+                      max={600}
+                      value={(status?.pacing_seconds || [30, 90])[1]}
+                      onChange={(e) => updateLimits({ pacing_max_seconds: parseInt(e.target.value, 10) || 90 })}
+                    />
+                  </label>
+                </div>
+              </details>
+            </>
           )}
         </div>
       )}

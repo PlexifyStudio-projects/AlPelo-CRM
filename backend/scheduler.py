@@ -115,6 +115,13 @@ def _scheduler_loop():
                 except Exception as e:
                     print(f"[SCHEDULER] Daily summary error: {e}")
 
+                # Resume Web campaigns paused on quota (auto-rolls when day changes)
+                try:
+                    from services.whatsapp.campaign_resume import resume_paused_web_campaigns
+                    resume_paused_web_campaigns(db)
+                except Exception as e:
+                    print(f"[SCHEDULER] Campaign resume error: {e}")
+
                 _check_noshow_followups(db)
                 _expire_old_notes(db)
 

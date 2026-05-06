@@ -81,8 +81,10 @@ def check_business_hours() -> Optional[str]:
 def check_recipient_cooldown(db: Session, tenant_id: int, phone: str) -> Optional[str]:
     """Return error message if we sent to this phone too recently, else None.
 
-    Looks at WhatsAppMessage outbound rows in the Web conversation for this
-    contact within the cooldown window.
+    Cooldown protects against repeated mass-sends to the same number. We SKIP it
+    when this is an active conversation — defined as the recipient having sent
+    us an inbound message within the last 30 min. That's a real two-way chat,
+    not spam, and Lina/staff must be able to reply naturally.
     """
     if RECIPIENT_COOLDOWN_MIN <= 0:
         return None
@@ -90,17 +92,31 @@ def check_recipient_cooldown(db: Session, tenant_id: int, phone: str) -> Optiona
     last10 = _last10(phone)
     if not last10:
         return None
-    # Find the conversation for this phone (web transport)
+    # Find conversations matching this phone across ALL transports
     convs = (
         db.query(WhatsAppConversation)
         .filter(WhatsAppConversation.tenant_id == tenant_id)
-        .filter(WhatsAppConversation.transport == "web")
         .all()
     )
     matching = [c for c in convs if _last10(c.wa_contact_phone) == last10]
     if not matching:
         return None
     conv_ids = [c.id for c in matching]
+
+    # CONVERSATIONAL OVERRIDE: if there's an inbound from this contact in the
+    # last 30 min, this is a live two-way chat — bypass cooldown so Lina/staff
+    # can reply. The ban risk is for *unsolicited* repeat sends, not replies.
+    convo_window = datetime.utcnow() - timedelta(minutes=30)
+    has_recent_inbound = (
+        db.query(WhatsAppMessage)
+        .filter(WhatsAppMessage.conversation_id.in_(conv_ids))
+        .filter(WhatsAppMessage.direction == "inbound")
+        .filter(WhatsAppMessage.created_at >= convo_window)
+        .first()
+    )
+    if has_recent_inbound:
+        return None
+
     recent = (
         db.query(WhatsAppMessage)
         .filter(WhatsAppMessage.conversation_id.in_(conv_ids))
@@ -127,7 +143,13 @@ def record_send_outcome(tenant_id: int, success: bool):
     """Update the in-memory failure tracker. If we hit threshold, open the circuit."""
     now = time.time()
     if success:
+        # A successful send proves the connection is healthy — clear failure
+        # history AND reset any open circuit. Otherwise a 30-min lockout from
+        # earlier flakiness keeps blocking even after recovery.
         _FAIL_HISTORY.pop(tenant_id, None)
+        if tenant_id in _CIRCUIT_OPEN_UNTIL:
+            _CIRCUIT_OPEN_UNTIL.pop(tenant_id, None)
+            print(f"[anti-ban] CIRCUIT RESET for tenant {tenant_id} after successful send")
         return
     history = _FAIL_HISTORY.setdefault(tenant_id, [])
     history.append(now)
@@ -138,6 +160,12 @@ def record_send_outcome(tenant_id: int, success: bool):
         _CIRCUIT_OPEN_UNTIL[tenant_id] = now + CIRCUIT_BREAKER_PAUSE_SEC
         _FAIL_HISTORY.pop(tenant_id, None)
         print(f"[anti-ban] CIRCUIT OPEN for tenant {tenant_id} — pausing {CIRCUIT_BREAKER_PAUSE_SEC // 60} min")
+
+
+def reset_circuit(tenant_id: int):
+    """Manually clear the circuit breaker — useful when admin reconnects WA Web."""
+    _FAIL_HISTORY.pop(tenant_id, None)
+    _CIRCUIT_OPEN_UNTIL.pop(tenant_id, None)
 
 
 # ---------------------------------------------------------------------------
@@ -161,17 +189,27 @@ def vary_message(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Main entrypoint — call this BEFORE every Web-mode send.
 # ---------------------------------------------------------------------------
-def evaluate_send(db: Session, tenant_id: int, phone: str) -> Optional[str]:
-    """Run all anti-ban checks. Returns error message string if blocked, else None."""
-    # 1. Circuit breaker
+def evaluate_send(db: Session, tenant_id: int, phone: str, is_campaign: bool = True) -> Optional[str]:
+    """Run all anti-ban checks. Returns error message string if blocked, else None.
+
+    is_campaign=True (default): mass-send protections active (hours, cooldown).
+    is_campaign=False: conversational reply (Lina/staff replying to inbound) —
+        only the circuit breaker applies. Replies must work 24/7 because
+        clients write whenever, and refusing to answer is worse than the
+        spam-rule. The conversational nature itself is the strongest signal
+        WhatsApp uses to distinguish real users from bots.
+    """
+    # 1. Circuit breaker — always applies (protects against runaway failures)
     msg = check_circuit_breaker(tenant_id)
     if msg:
         return msg
-    # 2. Business hours
+    if not is_campaign:
+        return None
+    # 2. Business hours — campaigns only
     msg = check_business_hours()
     if msg:
         return msg
-    # 3. Per-recipient cooldown
+    # 3. Per-recipient cooldown — campaigns only
     msg = check_recipient_cooldown(db, tenant_id, phone)
     if msg:
         return msg

@@ -145,6 +145,11 @@ async def session_status(db: Session = Depends(get_db), user=Depends(get_current
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
+    # Roll the daily counter over at midnight even if no send has happened yet
+    # so the UI never shows yesterday's "19/20" on a fresh day.
+    from services.whatsapp.sender import reset_daily_counter_if_needed
+    reset_daily_counter_if_needed(db, tenant)
+
     sid = _session_id(tenant)
     remote = {}
     try:
@@ -286,6 +291,101 @@ async def purge_chats(
         status="warning",
     )
     return {"ok": True, "deleted_convs": len(conv_ids), "deleted_messages": deleted_msgs}
+
+
+@router.post("/dedupe-conversations")
+async def dedupe_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Merge conversations that share the same recipient phone number.
+
+    Symptom this fixes: when the dueño activates Web mode after using Meta,
+    incoming Web messages create a NEW conv (Baileys phone format differs from
+    Meta-stored phone). This produces "duplicate" chats in the inbox, one
+    empty (Web) and one with history (Meta). This endpoint merges them.
+
+    Strategy per duplicate group (same last10 digits):
+      - Keep the conv with the most messages as the canonical
+      - Move messages from the others to the canonical, update transport='web'
+      - Delete the now-empty duplicates
+    """
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant context")
+
+    convs = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.tenant_id == tid)
+        .all()
+    )
+    # Group by last10
+    groups: dict[str, list[WhatsAppConversation]] = {}
+    for c in convs:
+        digits = re.sub(r"\D", "", c.wa_contact_phone or "")
+        key = digits[-10:] if len(digits) >= 10 else digits
+        if not key:
+            continue
+        groups.setdefault(key, []).append(c)
+
+    merged = 0
+    deleted = 0
+    moved_msgs = 0
+    for key, group in groups.items():
+        if len(group) < 2:
+            continue
+        # Canonical: prefer the one with client_id linked, else the one with most messages
+        msg_counts = {
+            c.id: db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == c.id).count()
+            for c in group
+        }
+        with_client = [c for c in group if c.client_id]
+        if with_client:
+            canonical = max(with_client, key=lambda c: msg_counts.get(c.id, 0))
+        else:
+            canonical = max(group, key=lambda c: msg_counts.get(c.id, 0))
+
+        # Move messages + meta from siblings into canonical
+        canonical.transport = "web"
+        if not canonical.linked_owner_phone:
+            canonical.linked_owner_phone = (db.query(Tenant).filter(Tenant.id == tid).first().wa_web_phone)
+
+        for sibling in group:
+            if sibling.id == canonical.id:
+                continue
+            from sqlalchemy import update
+            res = db.execute(
+                update(WhatsAppMessage)
+                .where(WhatsAppMessage.conversation_id == sibling.id)
+                .values(conversation_id=canonical.id)
+            )
+            moved_msgs += res.rowcount or 0
+            # Inherit best name/photo if canonical lacks them
+            if not (canonical.wa_contact_name or "").strip() and (sibling.wa_contact_name or "").strip():
+                canonical.wa_contact_name = sibling.wa_contact_name
+            if not (canonical.wa_profile_photo_url or "").strip() and (sibling.wa_profile_photo_url or "").strip():
+                canonical.wa_profile_photo_url = sibling.wa_profile_photo_url
+            if not canonical.client_id and sibling.client_id:
+                canonical.client_id = sibling.client_id
+            db.delete(sibling)
+            deleted += 1
+        merged += 1
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al mergear: {e}")
+
+    log_event(
+        "sistema",
+        f"Inbox: {merged} grupos de chats duplicados unificados",
+        detail=f"{moved_msgs} mensajes movidos, {deleted} convs duplicadas eliminadas.",
+        status="info",
+    )
+    return {
+        "ok": True,
+        "groups_merged": merged,
+        "duplicates_deleted": deleted,
+        "messages_moved": moved_msgs,
+    }
 
 
 @router.post("/enrich-contacts")
@@ -512,15 +612,23 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
                 clean_phone = re.sub(r"\D", "", phone_raw)
                 clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
 
-                # Find or create conv (transport='web')
-                conv = (
+                # Match by last 10 digits across ALL transports (dedupe vs Meta convs)
+                all_convs_for_tenant = (
                     db.query(WhatsAppConversation)
                     .filter(WhatsAppConversation.tenant_id == tenant_id)
-                    .filter(WhatsAppConversation.transport == "web")
-                    .filter(WhatsAppConversation.wa_contact_phone.in_([phone_raw, clean_phone, f"+{clean_phone}"]))
-                    .first()
+                    .all()
                 )
-                if not conv:
+                conv = next(
+                    (c for c in all_convs_for_tenant
+                     if re.sub(r"\D", "", c.wa_contact_phone or "")[-10:] == clean_last10),
+                    None,
+                )
+                if conv:
+                    if conv.transport != "web":
+                        conv.transport = "web"
+                    if not conv.linked_owner_phone:
+                        conv.linked_owner_phone = tenant.wa_web_phone
+                else:
                     # Try to link to an existing client by last 10 digits
                     client = next(
                         (
@@ -609,19 +717,29 @@ async def receive_web_event(request: Request, background_tasks: BackgroundTasks,
         if msg_type in ("reaction", "sticker"):
             return {"ok": True, "skipped": msg_type}
 
-        # Find or create conversation (scoped to tenant + transport='web' so Meta convs don't collide)
+        # Match by last 10 digits across ALL transports (avoids duplicates when
+        # the same client previously had a 'meta' conv and now writes via Web).
         clean_phone = re.sub(r"\D", "", from_phone)
         clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
 
-        conv = (
+        all_convs = (
             db.query(WhatsAppConversation)
             .filter(WhatsAppConversation.tenant_id == tenant_id)
-            .filter(WhatsAppConversation.transport == "web")
-            .filter(WhatsAppConversation.wa_contact_phone.in_([from_phone, clean_phone, f"+{clean_phone}"]))
-            .first()
+            .all()
+        )
+        conv = next(
+            (c for c in all_convs if re.sub(r"\D", "", c.wa_contact_phone or "")[-10:] == clean_last10),
+            None,
         )
 
-        if not conv:
+        if conv:
+            # Reuse existing conv. If it was a Meta conv, migrate transport to web
+            # so Inbox shows it under the active mode and Lina sends via Baileys.
+            if conv.transport != "web":
+                conv.transport = "web"
+            if not conv.linked_owner_phone:
+                conv.linked_owner_phone = tenant.wa_web_phone
+        else:
             client_q = (
                 db.query(Client)
                 .filter(Client.tenant_id == tenant_id, Client.is_active == True)
